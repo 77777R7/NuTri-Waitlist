@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import '../../styles/logoloop.css';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import logo1 from '../../imports/image.png';
@@ -6,6 +6,17 @@ import logo2 from '../../imports/image-1.png';
 import logo3 from '../../imports/image-2.png';
 
 export default function Home() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    // Force muted and play to ensure autoplay works across all browsers (like Safari/iOS)
+    if (videoRef.current) {
+      videoRef.current.defaultMuted = true;
+      videoRef.current.muted = true;
+      videoRef.current.play().catch(e => console.log("Autoplay blocked:", e));
+    }
+  }, []);
+
   return (
     <>
       <main className="flex-1 flex flex-col pt-12 md:pt-20 lg:pt-24 pb-16">
@@ -18,9 +29,13 @@ export default function Home() {
             <div className="animate-fade-up delay-300 flex flex-col items-start gap-4">
             </div>
           </div>
-          <div className="animate-fade-up delay-400 relative flex justify-center lg:justify-end items-center h-[350px] sm:h-[450px] md:h-[500px] lg:h-[650px] w-full z-10 pointer-events-none">
+          <div 
+            className="animate-fade-up delay-400 relative flex justify-center lg:justify-end items-center h-[350px] sm:h-[450px] md:h-[500px] lg:h-[650px] w-full z-10 pointer-events-none"
+            style={{ mixBlendMode: 'screen' }}
+          >
             <div className="relative w-full h-full flex items-center justify-center animate-float">
               <video 
+                ref={videoRef}
                 autoPlay 
                 loop 
                 muted 
@@ -28,7 +43,6 @@ export default function Home() {
                 className="max-w-none w-[120%] h-[120%] object-contain"
                 style={{ 
                   filter: 'hue-rotate(-55deg) saturate(250%) brightness(1.2) contrast(1.1)', 
-                  mixBlendMode: 'screen',
                   transform: 'scale(1.25) translateX(5%)'
                 }}
               >
