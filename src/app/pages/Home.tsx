@@ -19,7 +19,7 @@ export default function Home() {
 
   return (
     <>
-      <main className="relative flex-1 overflow-hidden pt-8 pb-4 md:pt-20 md:pb-6 lg:pb-12">
+      <main className="relative flex-1 overflow-hidden pt-8 pb-4 md:pt-20 md:pb-6 lg:overflow-visible lg:pb-12">
         <section className="relative flex min-h-0 items-start pt-14 pb-5 sm:pt-16 sm:pb-7 md:pt-20 md:pb-8 lg:min-h-[720px] lg:items-center lg:pt-0 lg:pb-0">
           <div className="relative z-20 max-w-[680px]">
             <h1 className="animate-fade-up delay-100 font-['DM_Serif_Display'] leading-[1.02] tracking-[-0.02em] text-slate-900 mb-5 text-[clamp(50px,14vw,68px)] md:mb-6 md:text-[76px] lg:text-[85px]">Know what’s worth taking before you take it.</h1>
@@ -30,8 +30,11 @@ export default function Home() {
             </div>
           </div>
           <div 
-            className="animate-fade-up delay-400 pointer-events-none absolute right-[2vw] top-[56%] z-10 hidden h-[680px] w-[680px] -translate-y-1/2 items-center justify-center lg:flex"
-            style={{ mixBlendMode: 'screen' }}
+            className="animate-fade-up delay-400 pointer-events-none absolute top-[56%] z-10 hidden h-[680px] w-[680px] -translate-y-1/2 items-center justify-center lg:flex"
+            style={{ 
+              mixBlendMode: 'screen',
+              right: 'clamp(-220px, calc((1600px - 100vw) * 0.45), 0px)'
+            }}
           >
             <div className="relative w-full h-full flex items-center justify-center animate-float">
               <video 

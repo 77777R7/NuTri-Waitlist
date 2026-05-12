@@ -83,9 +83,19 @@ export default function RootLayout() {
           50% { transform: scale(1.1) translate(-1.5%, 1.5%); }
           100% { transform: scale(1.0) translate(0px, 0px); }
         }
+
+        @keyframes bgDetailFloat {
+          0% { transform: translate3d(0, 0, 0) scale(1.02); }
+          50% { transform: translate3d(-1.2%, 1.8%, 0) scale(1.06); }
+          100% { transform: translate3d(0, 0, 0) scale(1.02); }
+        }
         
         .animate-bg-float {
           animation: bgFloat 30s ease-in-out infinite;
+        }
+
+        .animate-bg-detail-float {
+          animation: bgDetailFloat 38s ease-in-out infinite;
         }
 
         html, body {
@@ -108,7 +118,25 @@ export default function RootLayout() {
             src={bgImage}
             alt="Ambient Background"
             className="w-full h-full object-cover animate-bg-float"
-            style={{ filter: 'saturate(1.15) contrast(1.05)' }}
+            style={{ 
+              filter: 'saturate(1.15) contrast(1.05)',
+              objectPosition: 'center 64%'
+            }}
+          />
+        </div>
+        <div className="absolute inset-x-[-8%] top-[-116svh] hidden h-[170svh] md:block">
+          <ImageWithFallback
+            key="bg-detail-remount-fix"
+            src={bgImage}
+            alt=""
+            aria-hidden="true"
+            className="h-full w-full object-cover animate-bg-detail-float opacity-70"
+            style={{
+              filter: 'saturate(1.25) contrast(1.08)',
+              objectPosition: 'center bottom',
+              WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.6) 34%, rgba(0,0,0,0) 76%)',
+              maskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.6) 34%, rgba(0,0,0,0) 76%)'
+            }}
           />
         </div>
         {/* Very light protective wash so text stays legible without hiding the image */}
