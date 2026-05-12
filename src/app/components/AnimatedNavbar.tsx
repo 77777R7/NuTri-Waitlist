@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, useScroll, useMotionValueEvent, AnimatePresence } from 'motion/react';
 import { ArrowRight } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router';
@@ -10,12 +10,25 @@ interface AnimatedNavbarProps {
 export const AnimatedNavbar: React.FC<AnimatedNavbarProps> = ({ isMounted }) => {
   const { scrollY } = useScroll();
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isCompactNav, setIsCompactNav] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const updateCompactNav = () => setIsCompactNav(mediaQuery.matches);
+
+    updateCompactNav();
+    mediaQuery.addEventListener('change', updateCompactNav);
+
+    return () => mediaQuery.removeEventListener('change', updateCompactNav);
+  }, []);
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     setIsScrolled(latest > 60);
   });
+
+  const effectiveIsScrolled = isScrolled && !isCompactNav;
 
   const baseGlassClass = "backdrop-blur-[50px] bg-[rgba(255,255,255,0.3)] border border-[rgba(0,0,0,0.1)] shadow-[inset_0_4px_4px_0_rgba(255,255,255,0.25)]";
 
@@ -81,11 +94,11 @@ export const AnimatedNavbar: React.FC<AnimatedNavbarProps> = ({ isMounted }) => 
 
   return (
     <nav 
-      className={`sticky top-[20px] md:top-[30px] z-50 w-full max-w-4xl mx-auto transition-all duration-1000 ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}
+      className={`sticky top-3 md:top-[30px] z-50 w-full max-w-4xl mx-auto transition-all duration-1000 ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}
     >
       {/* Unified Background (when not scrolled) */}
       <AnimatePresence>
-        {!isScrolled && (
+        {!effectiveIsScrolled && (
           <motion.div
             key="unified"
             initial={{ opacity: 0, scale: 0.95 }}
@@ -100,17 +113,17 @@ export const AnimatedNavbar: React.FC<AnimatedNavbarProps> = ({ isMounted }) => 
       <motion.div 
         layout
         transition={springTransition}
-        className={`flex items-center w-full justify-between relative z-10 ${!isScrolled ? 'px-4 py-3 md:px-6 md:py-4' : ''}`}
+        className={`flex items-center w-full justify-between relative z-10 ${!effectiveIsScrolled ? 'px-4 py-3 md:px-6 md:py-4' : ''}`}
       >
         {/* Left Part (Logo + [Home, About] if scrolled) */}
         <motion.div 
           layout
           transition={springTransition}
-          className={`relative flex items-center ${isScrolled ? 'px-4 py-2 md:px-5 lg:px-6 md:py-3 md:w-[48%] lg:w-[45%] justify-between' : ''}`}
+          className={`relative flex items-center ${effectiveIsScrolled ? 'px-4 py-2 md:px-5 lg:px-6 md:py-3 md:w-[48%] lg:w-[45%] justify-between' : ''}`}
         >
           {/* Split Background Left */}
           <AnimatePresence>
-            {isScrolled && (
+            {effectiveIsScrolled && (
               <motion.div
                 key="split-left"
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -126,7 +139,7 @@ export const AnimatedNavbar: React.FC<AnimatedNavbarProps> = ({ isMounted }) => 
             NuTri
           </motion.div>
           
-          {isScrolled && (
+          {effectiveIsScrolled && (
             <motion.div 
               layout 
               transition={springTransition}
@@ -138,7 +151,7 @@ export const AnimatedNavbar: React.FC<AnimatedNavbarProps> = ({ isMounted }) => 
         </motion.div>
 
         {/* Center Part (All Links if NOT scrolled) */}
-        {!isScrolled && (
+        {!effectiveIsScrolled && (
           <motion.div 
             layout 
             transition={springTransition}
@@ -152,11 +165,11 @@ export const AnimatedNavbar: React.FC<AnimatedNavbarProps> = ({ isMounted }) => 
         <motion.div 
           layout
           transition={springTransition}
-          className={`relative flex items-center ${isScrolled ? 'px-4 py-2 md:px-5 lg:px-6 md:py-3 md:w-[48%] lg:w-[45%] justify-between' : ''}`}
+          className={`relative flex items-center ${effectiveIsScrolled ? 'px-4 py-2 md:px-5 lg:px-6 md:py-3 md:w-[48%] lg:w-[45%] justify-between' : ''}`}
         >
           {/* Split Background Right */}
           <AnimatePresence>
-            {isScrolled && (
+            {effectiveIsScrolled && (
               <motion.div
                 key="split-right"
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -168,7 +181,7 @@ export const AnimatedNavbar: React.FC<AnimatedNavbarProps> = ({ isMounted }) => 
             )}
           </AnimatePresence>
 
-          {isScrolled && (
+          {effectiveIsScrolled && (
             <motion.div 
               layout 
               transition={springTransition}

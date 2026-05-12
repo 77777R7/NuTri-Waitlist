@@ -19,18 +19,18 @@ export default function Home() {
 
   return (
     <>
-      <main className="flex-1 flex flex-col pt-12 md:pt-20 lg:pt-24 pb-16">
-        <div className="grid lg:grid-cols-2 items-center gap-10 lg:gap-16">
-          <div className="flex flex-col items-start max-w-[650px] z-20">
-            <h1 className="animate-fade-up delay-100 font-['DM_Serif_Display'] leading-[1.02] tracking-[-0.02em] text-slate-900 mb-6 text-[85px]">Know what’s worth taking before you take it.</h1>
-            <p className="animate-fade-up delay-200 font-inter text-[18px] md:text-[20px] leading-[1.6] text-slate-900/65 max-w-[560px] mb-8 md:mb-10" style={{ fontWeight: 500 }}>
+      <main className="relative flex-1 flex flex-col overflow-hidden pt-10 pb-12 sm:pt-12 md:pt-20 md:pb-16 lg:overflow-visible lg:pt-24">
+        <div className="relative grid min-h-[calc(100svh-96px)] items-start gap-4 sm:min-h-[620px] sm:gap-8 md:min-h-[680px] lg:min-h-0 lg:grid-cols-2 lg:items-center lg:gap-16">
+          <div className="relative z-20 flex max-w-[650px] flex-col items-start pt-10 sm:pt-12 md:pt-0">
+            <h1 className="animate-fade-up delay-100 font-['DM_Serif_Display'] leading-[1.02] tracking-[-0.02em] text-slate-900 mb-5 text-[clamp(48px,15.5vw,72px)] md:mb-6 md:text-[85px]">Know what’s worth taking before you take it.</h1>
+            <p className="animate-fade-up delay-200 font-inter text-[16px] sm:text-[18px] md:text-[20px] leading-[1.6] text-slate-900/65 max-w-[500px] lg:max-w-[560px] mb-8 md:mb-10" style={{ fontWeight: 500 }}>
               NuTri is building a smarter supplement experience. Join the waitlist to get early access, launch updates, and priority entry when we open.
             </p>
             <div className="animate-fade-up delay-300 flex flex-col items-start gap-4">
             </div>
           </div>
           <div 
-            className="animate-fade-up delay-400 relative flex justify-center lg:justify-end items-center h-[350px] sm:h-[450px] md:h-[500px] lg:h-[650px] w-full z-10 pointer-events-none"
+            className="animate-fade-up delay-400 pointer-events-none absolute -right-[58%] top-[430px] z-10 flex h-[450px] w-[450px] items-center justify-center sm:-right-[36%] sm:top-[330px] sm:h-[560px] sm:w-[560px] md:-right-[28%] md:top-[230px] md:h-[650px] md:w-[650px] lg:relative lg:right-auto lg:top-auto lg:h-[650px] lg:w-full lg:justify-end"
             style={{ mixBlendMode: 'screen' }}
           >
             <div className="relative w-full h-full flex items-center justify-center animate-float">
@@ -40,13 +40,14 @@ export default function Home() {
                 loop 
                 muted 
                 playsInline
+                poster="/orb-poster.png"
                 className="max-w-none w-[120%] h-[120%] object-contain"
                 style={{ 
                   filter: 'hue-rotate(-55deg) saturate(250%) brightness(1.2) contrast(1.1)', 
                   transform: 'scale(1.25) translateX(5%)'
                 }}
               >
-                <source src="https://future.co/images/homepage/glassy-orb/orb-purple.webm" type="video/webm" />
+                <source src="/orb-purple.webm" type="video/webm" />
               </video>
             </div>
           </div>
