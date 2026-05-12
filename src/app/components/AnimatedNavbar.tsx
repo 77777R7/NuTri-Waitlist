@@ -1,22 +1,35 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, useScroll, useMotionValueEvent, AnimatePresence } from 'motion/react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ChevronDown } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
+
+gsap.registerPlugin(useGSAP);
 
 interface AnimatedNavbarProps {
   isMounted: boolean;
 }
 
 export const AnimatedNavbar: React.FC<AnimatedNavbarProps> = ({ isMounted }) => {
+  const navRef = useRef<HTMLElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const mobileChevronRef = useRef<SVGSVGElement>(null);
   const { scrollY } = useScroll();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isCompactNav, setIsCompactNav] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(max-width: 767px)');
-    const updateCompactNav = () => setIsCompactNav(mediaQuery.matches);
+    const updateCompactNav = () => {
+      setIsCompactNav(mediaQuery.matches);
+      if (!mediaQuery.matches) {
+        setIsMobileMenuOpen(false);
+      }
+    };
 
     updateCompactNav();
     mediaQuery.addEventListener('change', updateCompactNav);
@@ -33,6 +46,43 @@ export const AnimatedNavbar: React.FC<AnimatedNavbarProps> = ({ isMounted }) => 
   const baseGlassClass = "backdrop-blur-[50px] bg-[rgba(255,255,255,0.3)] border border-[rgba(0,0,0,0.1)] shadow-[inset_0_4px_4px_0_rgba(255,255,255,0.25)]";
 
   const springTransition = { duration: 0.5, type: 'spring', bounce: 0.2 };
+
+  useGSAP(() => {
+    const menu = mobileMenuRef.current;
+    const chevron = mobileChevronRef.current;
+
+    if (!menu) return;
+
+    const items = menu.querySelectorAll('[data-mobile-nav-item]');
+
+    if (isMobileMenuOpen) {
+      gsap.set(menu, { height: 'auto', autoAlpha: 1 });
+      const targetHeight = menu.offsetHeight;
+      gsap.fromTo(
+        menu,
+        { height: 0, autoAlpha: 0, y: -8 },
+        {
+          height: targetHeight,
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.36,
+          ease: 'power3.out',
+          overwrite: 'auto',
+          onComplete: () => gsap.set(menu, { height: 'auto' }),
+        }
+      );
+      gsap.fromTo(
+        items,
+        { autoAlpha: 0, y: -6 },
+        { autoAlpha: 1, y: 0, duration: 0.24, ease: 'power2.out', stagger: 0.045, delay: 0.08, overwrite: 'auto' }
+      );
+      gsap.to(chevron, { rotation: 180, duration: 0.28, ease: 'power2.out', overwrite: 'auto' });
+    } else {
+      gsap.to(items, { autoAlpha: 0, y: -4, duration: 0.12, ease: 'power1.out', stagger: { each: 0.025, from: 'end' }, overwrite: 'auto' });
+      gsap.to(menu, { height: 0, autoAlpha: 0, y: -8, duration: 0.26, ease: 'power2.inOut', overwrite: 'auto' });
+      gsap.to(chevron, { rotation: 0, duration: 0.24, ease: 'power2.out', overwrite: 'auto' });
+    }
+  }, { scope: navRef, dependencies: [isMobileMenuOpen] });
 
   const handleLinkClick = (e: React.MouseEvent, item: string) => {
     e.preventDefault();
@@ -73,6 +123,16 @@ export const AnimatedNavbar: React.FC<AnimatedNavbarProps> = ({ isMounted }) => 
     }
   };
 
+  const handleCtaClick = (e: React.MouseEvent) => {
+    if (isCompactNav) {
+      e.preventDefault();
+      setIsMobileMenuOpen((open) => !open);
+      return;
+    }
+
+    handleLinkClick(e, 'Waitlist');
+  };
+
   const renderLink = (item: string) => {
     let isActive = false;
     if (item === 'Home' && location.pathname === '/') isActive = true;
@@ -101,9 +161,13 @@ export const AnimatedNavbar: React.FC<AnimatedNavbarProps> = ({ isMounted }) => 
       <motion.a
         key={`mobile-${item}`}
         href="#"
-        onClick={(e) => handleLinkClick(e, item)}
+        onClick={(e) => {
+          setIsMobileMenuOpen(false);
+          handleLinkClick(e, item);
+        }}
         transition={springTransition}
-        className={`text-[13px] font-medium transition-colors duration-200 whitespace-nowrap ${isActive ? 'text-slate-900' : 'text-slate-900/65 hover:text-slate-900'}`}
+        data-mobile-nav-item
+        className={`block rounded-[12px] border border-white/30 bg-white/25 px-4 py-3 text-sm font-medium transition-colors duration-200 ${isActive ? 'text-slate-900' : 'text-slate-900/70 hover:text-slate-900'}`}
       >
         {item}
       </motion.a>
@@ -112,6 +176,7 @@ export const AnimatedNavbar: React.FC<AnimatedNavbarProps> = ({ isMounted }) => 
 
   return (
     <nav 
+      ref={navRef}
       className={`sticky top-[calc(env(safe-area-inset-top,0px)+12px)] md:top-[30px] z-50 w-full max-w-4xl mx-auto transition-all duration-1000 ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}
     >
       {/* Unified Background (when not scrolled) */}
@@ -213,23 +278,31 @@ export const AnimatedNavbar: React.FC<AnimatedNavbarProps> = ({ isMounted }) => 
             <motion.button 
               layoutId="nav-cta"
               transition={springTransition}
-              onClick={(e) => handleLinkClick(e, 'Waitlist')} 
+              onClick={handleCtaClick}
+              aria-expanded={isCompactNav ? isMobileMenuOpen : undefined}
+              aria-controls={isCompactNav ? 'mobile-primary-nav' : undefined}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="group flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 bg-[rgba(255,255,255,0.6)] hover:bg-[rgba(255,255,255,0.8)] border border-white/40 shadow-[inset_0_2px_4px_rgba(255,255,255,0.5)] rounded-[14px] text-sm font-medium text-slate-900 transition-colors duration-300 whitespace-nowrap"
-            >Learn More<ArrowRight className="w-4 h-4 opacity-70 group-hover:translate-x-1 transition-transform" /></motion.button>
+            >
+              Learn More
+              <ArrowRight className="hidden w-4 h-4 opacity-70 transition-transform group-hover:translate-x-1 md:block" />
+              <ChevronDown ref={mobileChevronRef} className="block w-4 h-4 opacity-70 md:hidden" />
+            </motion.button>
           </motion.div>
         </div>
 
-        {!effectiveIsScrolled && (
-          <motion.div
-            layout
-            transition={springTransition}
-            className="mt-3 flex w-full items-center justify-between border-t border-white/40 pt-3 md:hidden"
-          >
+        <div
+          id="mobile-primary-nav"
+          ref={mobileMenuRef}
+          aria-hidden={!isMobileMenuOpen}
+          className="mt-0 grid w-full grid-cols-1 gap-2 overflow-hidden border-t border-white/40 md:hidden"
+          style={{ height: 0, opacity: 0, visibility: 'hidden' }}
+        >
+          <div className="grid grid-cols-1 gap-2 pt-3">
             {['Home', 'About', 'Waitlist', 'Contact'].map(renderMobileLink)}
-          </motion.div>
-        )}
+          </div>
+        </div>
 
       </motion.div>
     </nav>
