@@ -8,4 +8,20 @@
   Run `npm i` to install the dependencies.
 
   Run `npm run dev` to start the development server.
+
+  ## Waitlist backend
+
+  The custom waitlist form submits to `/api/waitlist`, a Vercel Function that
+  adds subscribers to beehiiv without exposing the beehiiv API key in the
+  browser.
+
+  Required Vercel environment variables:
+
+  - `BEEHIIV_API_KEY`
+  - `BEEHIIV_PUBLICATION_ID`
+
+  Optional environment variables:
+
+  - `BEEHIIV_SEND_WELCOME_EMAIL=false`
+  - `BEEHIIV_DOUBLE_OPT_OVERRIDE=` (`on`, `off`, or `not_set`)
   

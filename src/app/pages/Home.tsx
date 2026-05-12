@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import '../../styles/logoloop.css';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import logo1 from '../../imports/image.png';
@@ -7,6 +7,9 @@ import logo3 from '../../imports/image-2.png';
 
 export default function Home() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [email, setEmail] = useState('');
+  const [waitlistStatus, setWaitlistStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  const [waitlistMessage, setWaitlistMessage] = useState('');
 
   useEffect(() => {
     // Force muted and play to ensure autoplay works across all browsers (like Safari/iOS)
@@ -16,6 +19,44 @@ export default function Home() {
       videoRef.current.play().catch(e => console.log("Autoplay blocked:", e));
     }
   }, []);
+
+  const handleWaitlistSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+    const submittedEmail = String(formData.get('email') || '').trim();
+    const company = String(formData.get('company') || '').trim();
+
+    if (!submittedEmail) {
+      setWaitlistStatus('error');
+      setWaitlistMessage('Please enter your email address.');
+      return;
+    }
+
+    setWaitlistStatus('submitting');
+    setWaitlistMessage('');
+
+    try {
+      const response = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: submittedEmail, company }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok || !result.ok) {
+        throw new Error(result.message || 'Unable to join the waitlist right now.');
+      }
+
+      setWaitlistStatus('success');
+      setWaitlistMessage(result.message || 'You are on the NuTri waitlist.');
+      setEmail('');
+    } catch (error) {
+      setWaitlistStatus('error');
+      setWaitlistMessage(error instanceof Error ? error.message : 'Unable to join the waitlist right now.');
+    }
+  };
 
   return (
     <>
@@ -63,22 +104,50 @@ export default function Home() {
             Get early access to NuTri
           </h2>
           <p className="font-inter text-[15px] md:text-[17px] leading-[1.6] text-slate-900/65 text-center max-w-[500px] mb-8 md:mb-10">Be the first to know when we launch. Join the waitlist for beta access, launch updates, and <span className="font-bold">Founding Member Pricing.</span></p>
-          <form className="w-full max-w-[500px] flex flex-col md:flex-row gap-3 md:gap-2 mb-4" onSubmit={(e) => e.preventDefault()}>
+          <form className="w-full max-w-[500px] flex flex-col md:flex-row gap-3 md:gap-2 mb-4" onSubmit={handleWaitlistSubmit}>
+            <input
+              type="text"
+              name="company"
+              className="hidden"
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+            />
             <div className="relative flex-1 w-full">
               <input 
                 type="email" 
+                name="email"
                 placeholder="Enter your email address" 
                 required
+                value={email}
+                disabled={waitlistStatus === 'submitting'}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  if (waitlistStatus !== 'idle') {
+                    setWaitlistStatus('idle');
+                    setWaitlistMessage('');
+                  }
+                }}
                 className="w-full h-[56px] md:h-[64px] px-6 rounded-full bg-white/60 border-2 border-black shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] focus:outline-none focus:ring-2 focus:ring-blue-400/30 focus:bg-white/80 transition-all font-inter font-medium text-slate-900 placeholder:text-slate-900/35 placeholder:font-normal"
               />
             </div>
             <button 
               type="submit"
-              className="h-[56px] md:h-[64px] px-8 rounded-full bg-black hover:bg-neutral-800 text-white font-semibold text-[15px] md:text-[16px] shadow-[inset_0_4px_4px_rgba(255,255,255,0.15),0_6px_16px_rgba(0,0,0,0.25)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
+              disabled={waitlistStatus === 'submitting'}
+              className="h-[56px] md:h-[64px] px-8 rounded-full bg-black hover:bg-neutral-800 disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-semibold text-[15px] md:text-[16px] shadow-[inset_0_4px_4px_rgba(255,255,255,0.15),0_6px_16px_rgba(0,0,0,0.25)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:hover:scale-100 whitespace-nowrap"
             >
-              Reserve My Spot
+              {waitlistStatus === 'submitting' ? 'Joining...' : 'Reserve My Spot'}
             </button>
           </form>
+          {waitlistMessage && (
+            <p
+              className={`mb-4 text-center text-sm font-semibold ${waitlistStatus === 'success' ? 'text-slate-900' : 'text-red-700'}`}
+              role={waitlistStatus === 'error' ? 'alert' : 'status'}
+              aria-live="polite"
+            >
+              {waitlistMessage}
+            </p>
+          )}
           <p className="text-xs text-slate-900/45 font-medium text-center">
             Free to join &middot; No spam &middot; Unsubscribe anytime
           </p>
