@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, useScroll, useMotionValueEvent, AnimatePresence } from 'motion/react';
 import { ArrowRight, ChevronDown } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router';
+import { Link, useNavigate, useLocation } from 'react-router';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 
@@ -116,6 +116,12 @@ export const AnimatedNavbar: React.FC<AnimatedNavbarProps> = ({ isMounted }) => 
       } else {
         smoothScrollAndNavigate('/about');
       }
+    } else if (item === 'Learn More' || item === 'App Overview') {
+      if (location.pathname === '/learn-more' && !location.hash) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        smoothScrollAndNavigate('/learn-more');
+      }
     } else if (item === 'Waitlist') {
       navigate('/#waitlist');
     } else if (item === 'Contact') {
@@ -130,13 +136,31 @@ export const AnimatedNavbar: React.FC<AnimatedNavbarProps> = ({ isMounted }) => 
       return;
     }
 
-    handleLinkClick(e, 'Waitlist');
+    handleLinkClick(e, 'Learn More');
+  };
+
+  const handleDesktopCtaClick = (e: React.MouseEvent) => {
+    if (isCompactNav) {
+      handleCtaClick(e);
+      return;
+    }
+
+    if (location.pathname === '/learn-more') {
+      e.preventDefault();
+      const overview = document.getElementById('app-overview');
+      if (overview) {
+        overview.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
   };
 
   const renderLink = (item: string) => {
     let isActive = false;
     if (item === 'Home' && location.pathname === '/') isActive = true;
     if (item === 'About' && location.pathname === '/about') isActive = true;
+    if ((item === 'Learn More' || item === 'App Overview') && location.pathname === '/learn-more') isActive = true;
 
     return (
       <motion.a
@@ -156,6 +180,7 @@ export const AnimatedNavbar: React.FC<AnimatedNavbarProps> = ({ isMounted }) => 
     let isActive = false;
     if (item === 'Home' && location.pathname === '/') isActive = true;
     if (item === 'About' && location.pathname === '/about') isActive = true;
+    if ((item === 'Learn More' || item === 'App Overview') && location.pathname === '/learn-more') isActive = true;
 
     return (
       <motion.a
@@ -275,20 +300,35 @@ export const AnimatedNavbar: React.FC<AnimatedNavbarProps> = ({ isMounted }) => 
               </motion.div>
             )}
             
-            <motion.button 
+            <motion.div
               layoutId="nav-cta"
               transition={springTransition}
-              onClick={handleCtaClick}
-              aria-expanded={isCompactNav ? isMobileMenuOpen : undefined}
-              aria-controls={isCompactNav ? 'mobile-primary-nav' : undefined}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="group flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 rounded-[14px] border border-white/70 bg-[rgba(248,253,255,0.76)] shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_10px_28px_rgba(15,54,86,0.12)] backdrop-blur-[30px] text-sm font-medium text-slate-900 transition-colors duration-300 hover:bg-[rgba(255,255,255,0.9)] whitespace-nowrap"
+              className="inline-flex"
             >
-              Learn More
-              <ArrowRight className="hidden w-4 h-4 opacity-70 transition-transform group-hover:translate-x-1 md:block" />
-              <ChevronDown ref={mobileChevronRef} className="block w-4 h-4 opacity-70 md:hidden" />
-            </motion.button>
+              {isCompactNav ? (
+                <button
+                  type="button"
+                  onClick={handleCtaClick}
+                  aria-expanded={isMobileMenuOpen}
+                  aria-controls="mobile-primary-nav"
+                  className="group flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 rounded-[14px] border border-white/70 bg-[rgba(248,253,255,0.76)] shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_10px_28px_rgba(15,54,86,0.12)] backdrop-blur-[30px] text-sm font-medium text-slate-900 transition-colors duration-300 hover:bg-[rgba(255,255,255,0.9)] whitespace-nowrap"
+                >
+                  Learn More
+                  <ChevronDown ref={mobileChevronRef} className="block w-4 h-4 opacity-70 md:hidden" />
+                </button>
+              ) : (
+                <Link
+                  to="/learn-more"
+                  onClick={handleDesktopCtaClick}
+                  className="group flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 rounded-[14px] border border-white/70 bg-[rgba(248,253,255,0.76)] shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_10px_28px_rgba(15,54,86,0.12)] backdrop-blur-[30px] text-sm font-medium text-slate-900 transition-colors duration-300 hover:bg-[rgba(255,255,255,0.9)] whitespace-nowrap"
+                >
+                  Learn More
+                  <ArrowRight className="hidden w-4 h-4 opacity-70 transition-transform group-hover:translate-x-1 md:block" />
+                </Link>
+              )}
+            </motion.div>
           </motion.div>
         </div>
 
@@ -300,7 +340,7 @@ export const AnimatedNavbar: React.FC<AnimatedNavbarProps> = ({ isMounted }) => 
           style={{ height: 0, opacity: 0, visibility: 'hidden' }}
         >
           <div className="grid grid-cols-1 gap-2 pt-3">
-            {['Home', 'About', 'Waitlist', 'Contact'].map(renderMobileLink)}
+            {['App Overview', 'Home', 'About', 'Waitlist', 'Contact'].map(renderMobileLink)}
           </div>
         </div>
 
