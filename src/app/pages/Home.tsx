@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, CircleAlert } from 'lucide-react';
+import { Link } from 'react-router';
 import '../../styles/logoloop.css';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import logo1 from '../../imports/image.png';
@@ -221,10 +222,10 @@ export default function Home() {
           <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8 text-[13px] md:text-sm font-medium text-slate-900/60">
             
             <div className="flex gap-4 md:gap-6">
-              <a href="#" className="hover:text-black transition-colors">Terms of Service</a>
-              <a href="#" className="hover:text-black transition-colors">Privacy Policy</a>
+              <Link to="/terms" className="hover:text-black transition-colors">Terms of Service</Link>
+              <Link to="/privacy" className="hover:text-black transition-colors">Privacy Policy</Link>
             </div>
-            <span className="hidden md:inline">&copy; 2026 NuTri</span>
+            <span>&copy; 2026 NuTri. All rights reserved.</span>
           </div>
         </div>
       </section>
