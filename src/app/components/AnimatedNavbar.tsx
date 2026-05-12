@@ -92,6 +92,24 @@ export const AnimatedNavbar: React.FC<AnimatedNavbarProps> = ({ isMounted }) => 
     );
   };
 
+  const renderMobileLink = (item: string) => {
+    let isActive = false;
+    if (item === 'Home' && location.pathname === '/') isActive = true;
+    if (item === 'About' && location.pathname === '/about') isActive = true;
+
+    return (
+      <motion.a
+        key={`mobile-${item}`}
+        href="#"
+        onClick={(e) => handleLinkClick(e, item)}
+        transition={springTransition}
+        className={`text-[13px] font-medium transition-colors duration-200 whitespace-nowrap ${isActive ? 'text-slate-900' : 'text-slate-900/65 hover:text-slate-900'}`}
+      >
+        {item}
+      </motion.a>
+    );
+  };
+
   return (
     <nav 
       className={`sticky top-[calc(env(safe-area-inset-top,0px)+12px)] md:top-[30px] z-50 w-full max-w-4xl mx-auto transition-all duration-1000 ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}
@@ -113,93 +131,105 @@ export const AnimatedNavbar: React.FC<AnimatedNavbarProps> = ({ isMounted }) => 
       <motion.div 
         layout
         transition={springTransition}
-        className={`flex items-center w-full justify-between relative z-10 ${!effectiveIsScrolled ? 'px-4 py-3 md:px-6 md:py-4' : ''}`}
+        className={`flex w-full flex-col relative z-10 ${!effectiveIsScrolled ? 'px-4 py-3 md:px-6 md:py-4' : ''}`}
       >
-        {/* Left Part (Logo + [Home, About] if scrolled) */}
-        <motion.div 
-          layout
-          transition={springTransition}
-          className={`relative flex items-center ${effectiveIsScrolled ? 'px-4 py-2 md:px-5 lg:px-6 md:py-3 md:w-[48%] lg:w-[45%] justify-between' : ''}`}
-        >
-          {/* Split Background Left */}
-          <AnimatePresence>
-            {effectiveIsScrolled && (
-              <motion.div
-                key="split-left"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.4, ease: "easeInOut" }}
-                className={`absolute inset-0 ${baseGlassClass} rounded-[100px] -z-10`}
-              />
-            )}
-          </AnimatePresence>
+        <div className="relative flex w-full items-center justify-between">
+          {/* Left Part (Logo + [Home, About] if scrolled) */}
+          <motion.div 
+            layout
+            transition={springTransition}
+            className={`relative flex items-center ${effectiveIsScrolled ? 'px-4 py-2 md:px-5 lg:px-6 md:py-3 md:w-[48%] lg:w-[45%] justify-between' : ''}`}
+          >
+            {/* Split Background Left */}
+            <AnimatePresence>
+              {effectiveIsScrolled && (
+                <motion.div
+                  key="split-left"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.4, ease: "easeInOut" }}
+                  className={`absolute inset-0 ${baseGlassClass} rounded-[100px] -z-10`}
+                />
+              )}
+            </AnimatePresence>
 
-          <motion.div layoutId="nav-logo" transition={springTransition} className="font-['Inter'] font-bold text-xl md:text-2xl text-slate-900 tracking-[-0.03em] whitespace-nowrap">
-            NuTri
+            <motion.div layoutId="nav-logo" transition={springTransition} className="font-['Inter'] font-bold text-xl md:text-2xl text-slate-900 tracking-[-0.03em] whitespace-nowrap">
+              NuTri
+            </motion.div>
+            
+            {effectiveIsScrolled && (
+              <motion.div 
+                layout 
+                transition={springTransition}
+                className="hidden md:flex items-center space-x-6 lg:space-x-8"
+              >
+                {['Home', 'About'].map(renderLink)}
+              </motion.div>
+            )}
           </motion.div>
-          
-          {effectiveIsScrolled && (
+
+          {/* Center Part (All Links if NOT scrolled) */}
+          {!effectiveIsScrolled && (
             <motion.div 
               layout 
               transition={springTransition}
-              className="hidden md:flex items-center space-x-6 lg:space-x-8"
+              className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center space-x-6 lg:space-x-8"
             >
-              {['Home', 'About'].map(renderLink)}
+              {['Home', 'About', 'Waitlist', 'Contact'].map(renderLink)}
             </motion.div>
           )}
-        </motion.div>
 
-        {/* Center Part (All Links if NOT scrolled) */}
-        {!effectiveIsScrolled && (
+          {/* Right Part ([Waitlist, Contact] if scrolled + CTA) */}
           <motion.div 
-            layout 
+            layout
             transition={springTransition}
-            className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center space-x-6 lg:space-x-8"
+            className={`relative flex items-center ${effectiveIsScrolled ? 'px-4 py-2 md:px-5 lg:px-6 md:py-3 md:w-[48%] lg:w-[45%] justify-between' : ''}`}
           >
-            {['Home', 'About', 'Waitlist', 'Contact'].map(renderLink)}
+            {/* Split Background Right */}
+            <AnimatePresence>
+              {effectiveIsScrolled && (
+                <motion.div
+                  key="split-right"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.4, ease: "easeInOut" }}
+                  className={`absolute inset-0 ${baseGlassClass} rounded-[100px] -z-10`}
+                />
+              )}
+            </AnimatePresence>
+
+            {effectiveIsScrolled && (
+              <motion.div 
+                layout 
+                transition={springTransition}
+                className="hidden md:flex items-center space-x-6 lg:space-x-8"
+              >
+                {['Waitlist', 'Contact'].map(renderLink)}
+              </motion.div>
+            )}
+            
+            <motion.button 
+              layoutId="nav-cta"
+              transition={springTransition}
+              onClick={(e) => handleLinkClick(e, 'Waitlist')} 
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="group flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 bg-[rgba(255,255,255,0.6)] hover:bg-[rgba(255,255,255,0.8)] border border-white/40 shadow-[inset_0_2px_4px_rgba(255,255,255,0.5)] rounded-[14px] text-sm font-medium text-slate-900 transition-colors duration-300 whitespace-nowrap"
+            >Learn More<ArrowRight className="w-4 h-4 opacity-70 group-hover:translate-x-1 transition-transform" /></motion.button>
+          </motion.div>
+        </div>
+
+        {!effectiveIsScrolled && (
+          <motion.div
+            layout
+            transition={springTransition}
+            className="mt-3 flex w-full items-center justify-between border-t border-white/40 pt-3 md:hidden"
+          >
+            {['Home', 'About', 'Waitlist', 'Contact'].map(renderMobileLink)}
           </motion.div>
         )}
-
-        {/* Right Part ([Waitlist, Contact] if scrolled + CTA) */}
-        <motion.div 
-          layout
-          transition={springTransition}
-          className={`relative flex items-center ${effectiveIsScrolled ? 'px-4 py-2 md:px-5 lg:px-6 md:py-3 md:w-[48%] lg:w-[45%] justify-between' : ''}`}
-        >
-          {/* Split Background Right */}
-          <AnimatePresence>
-            {effectiveIsScrolled && (
-              <motion.div
-                key="split-right"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.4, ease: "easeInOut" }}
-                className={`absolute inset-0 ${baseGlassClass} rounded-[100px] -z-10`}
-              />
-            )}
-          </AnimatePresence>
-
-          {effectiveIsScrolled && (
-            <motion.div 
-              layout 
-              transition={springTransition}
-              className="hidden md:flex items-center space-x-6 lg:space-x-8"
-            >
-              {['Waitlist', 'Contact'].map(renderLink)}
-            </motion.div>
-          )}
-          
-          <motion.button 
-            layoutId="nav-cta"
-            transition={springTransition}
-            onClick={(e) => handleLinkClick(e, 'Waitlist')} 
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="group flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 bg-[rgba(255,255,255,0.6)] hover:bg-[rgba(255,255,255,0.8)] border border-white/40 shadow-[inset_0_2px_4px_rgba(255,255,255,0.5)] rounded-[14px] text-sm font-medium text-slate-900 transition-colors duration-300 whitespace-nowrap"
-          >Learn More<ArrowRight className="w-4 h-4 opacity-70 group-hover:translate-x-1 transition-transform" /></motion.button>
-        </motion.div>
 
       </motion.div>
     </nav>
