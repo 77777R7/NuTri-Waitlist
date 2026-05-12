@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { CheckCircle2, CircleAlert } from 'lucide-react';
 import '../../styles/logoloop.css';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import logo1 from '../../imports/image.png';
@@ -136,17 +137,36 @@ export default function Home() {
               disabled={waitlistStatus === 'submitting'}
               className="h-[56px] md:h-[64px] px-8 rounded-full bg-black hover:bg-neutral-800 disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-semibold text-[15px] md:text-[16px] shadow-[inset_0_4px_4px_rgba(255,255,255,0.15),0_6px_16px_rgba(0,0,0,0.25)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:hover:scale-100 whitespace-nowrap"
             >
-              {waitlistStatus === 'submitting' ? 'Joining...' : 'Reserve My Spot'}
+              {waitlistStatus === 'submitting' ? 'Joining...' : waitlistStatus === 'success' ? "You're In" : 'Reserve My Spot'}
             </button>
           </form>
           {waitlistMessage && (
-            <p
-              className={`mb-4 text-center text-sm font-semibold ${waitlistStatus === 'success' ? 'text-slate-900' : 'text-red-700'}`}
+            <div
+              className={`mb-5 flex w-full max-w-[500px] items-start gap-3 rounded-[22px] border px-4 py-3 text-left shadow-[inset_0_1px_1px_rgba(255,255,255,0.75),0_12px_30px_rgba(15,23,42,0.08)] backdrop-blur-[18px] ${
+                waitlistStatus === 'success'
+                  ? 'border-emerald-500/30 bg-emerald-50/75 text-emerald-950'
+                  : 'border-red-500/30 bg-red-50/75 text-red-950'
+              }`}
               role={waitlistStatus === 'error' ? 'alert' : 'status'}
               aria-live="polite"
             >
-              {waitlistMessage}
-            </p>
+              <span
+                className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
+                  waitlistStatus === 'success' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
+                }`}
+                aria-hidden="true"
+              >
+                {waitlistStatus === 'success' ? <CheckCircle2 className="h-4 w-4" /> : <CircleAlert className="h-4 w-4" />}
+              </span>
+              <div>
+                <p className="font-inter text-sm font-bold">
+                  {waitlistStatus === 'success' ? 'You are on the waitlist.' : 'Could not join yet.'}
+                </p>
+                <p className="mt-1 font-inter text-sm leading-[1.45] opacity-80">
+                  {waitlistStatus === 'success' ? 'We saved your spot and will use this email for NuTri launch updates.' : waitlistMessage}
+                </p>
+              </div>
+            </div>
           )}
           <p className="text-xs text-slate-900/45 font-medium text-center">
             Free to join &middot; No spam &middot; Unsubscribe anytime
