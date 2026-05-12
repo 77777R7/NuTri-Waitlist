@@ -43,7 +43,7 @@ export const AnimatedNavbar: React.FC<AnimatedNavbarProps> = ({ isMounted }) => 
 
   const effectiveIsScrolled = isScrolled && !isCompactNav;
 
-  const baseGlassClass = "backdrop-blur-[50px] bg-[rgba(255,255,255,0.3)] border border-[rgba(0,0,0,0.1)] shadow-[inset_0_4px_4px_0_rgba(255,255,255,0.25)]";
+  const baseGlassClass = "backdrop-blur-[72px] backdrop-saturate-[190%] bg-[rgba(238,249,255,0.74)] border border-[rgba(255,255,255,0.72)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.95),inset_0_-18px_34px_rgba(255,255,255,0.26),0_16px_46px_rgba(15,54,86,0.18)]";
 
   const springTransition = { duration: 0.5, type: 'spring', bounce: 0.2 };
 
@@ -167,7 +167,7 @@ export const AnimatedNavbar: React.FC<AnimatedNavbarProps> = ({ isMounted }) => 
         }}
         transition={springTransition}
         data-mobile-nav-item
-        className={`block rounded-[12px] border border-white/30 bg-white/25 px-4 py-3 text-sm font-medium transition-colors duration-200 ${isActive ? 'text-slate-900' : 'text-slate-900/70 hover:text-slate-900'}`}
+        className={`block rounded-[12px] border border-white/60 bg-[rgba(248,253,255,0.58)] px-4 py-3 text-sm font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-[28px] transition-colors duration-200 ${isActive ? 'text-slate-900' : 'text-slate-900/70 hover:text-slate-900'}`}
       >
         {item}
       </motion.a>
@@ -283,7 +283,7 @@ export const AnimatedNavbar: React.FC<AnimatedNavbarProps> = ({ isMounted }) => 
               aria-controls={isCompactNav ? 'mobile-primary-nav' : undefined}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="group flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 bg-[rgba(255,255,255,0.6)] hover:bg-[rgba(255,255,255,0.8)] border border-white/40 shadow-[inset_0_2px_4px_rgba(255,255,255,0.5)] rounded-[14px] text-sm font-medium text-slate-900 transition-colors duration-300 whitespace-nowrap"
+              className="group flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 rounded-[14px] border border-white/70 bg-[rgba(248,253,255,0.76)] shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_10px_28px_rgba(15,54,86,0.12)] backdrop-blur-[30px] text-sm font-medium text-slate-900 transition-colors duration-300 hover:bg-[rgba(255,255,255,0.9)] whitespace-nowrap"
             >
               Learn More
               <ArrowRight className="hidden w-4 h-4 opacity-70 transition-transform group-hover:translate-x-1 md:block" />
@@ -296,7 +296,7 @@ export const AnimatedNavbar: React.FC<AnimatedNavbarProps> = ({ isMounted }) => 
           id="mobile-primary-nav"
           ref={mobileMenuRef}
           aria-hidden={!isMobileMenuOpen}
-          className="mt-0 grid w-full grid-cols-1 gap-2 overflow-hidden border-t border-white/40 md:hidden"
+          className="mt-0 grid w-full grid-cols-1 gap-2 overflow-hidden border-t border-white/60 md:hidden"
           style={{ height: 0, opacity: 0, visibility: 'hidden' }}
         >
           <div className="grid grid-cols-1 gap-2 pt-3">
