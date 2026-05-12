@@ -47,6 +47,8 @@ export default function RootLayout() {
       
       {/* Inject Fonts and Custom Animations */}
       <style dangerouslySetInnerHTML={{__html: `
+        :root { --safe-top: env(safe-area-inset-top, 0px); }
+
         .font-fustat { font-family: 'Fustat', sans-serif; }
         .font-inter { font-family: 'Inter', sans-serif; }
         

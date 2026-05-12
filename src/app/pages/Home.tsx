@@ -19,18 +19,31 @@ export default function Home() {
 
   return (
     <>
-      <main className="relative flex-1 flex flex-col overflow-hidden pt-10 pb-12 sm:pt-12 md:pt-20 md:pb-16 lg:overflow-visible lg:pt-24">
-        <div className="relative grid min-h-[calc(100svh-96px)] items-start gap-4 sm:min-h-[620px] sm:gap-8 md:min-h-[680px] lg:min-h-0 lg:grid-cols-2 lg:items-center lg:gap-16">
-          <div className="relative z-20 flex max-w-[650px] flex-col items-start pt-10 sm:pt-12 md:pt-0">
-            <h1 className="animate-fade-up delay-100 font-['DM_Serif_Display'] leading-[1.02] tracking-[-0.02em] text-slate-900 mb-5 text-[clamp(48px,15.5vw,72px)] md:mb-6 md:text-[85px]">Know what’s worth taking before you take it.</h1>
-            <p className="animate-fade-up delay-200 font-inter text-[16px] sm:text-[18px] md:text-[20px] leading-[1.6] text-slate-900/65 max-w-[500px] lg:max-w-[560px] mb-8 md:mb-10" style={{ fontWeight: 500 }}>
+      <main className="relative flex-1 overflow-hidden pt-8 pb-12 md:pt-20">
+        <section className="relative flex min-h-[calc(100svh-88px)] items-start md:min-h-[calc(100svh-96px)] lg:min-h-[720px] lg:items-center">
+          <img
+            src="/orb-mobile.png"
+            alt=""
+            aria-hidden="true"
+            className="animate-fade-up delay-300 pointer-events-none absolute -right-[82vw] -top-[70px] z-10 w-[190vw] max-w-none rounded-full opacity-85 mix-blend-screen sm:-right-[62vw] sm:-top-[96px] sm:w-[158vw] lg:hidden"
+            style={{
+              WebkitClipPath: 'circle(44% at 58% 52%)',
+              clipPath: 'circle(44% at 58% 52%)',
+              WebkitMaskImage: 'radial-gradient(circle at 58% 52%, black 0%, black 30%, transparent 54%)',
+              maskImage: 'radial-gradient(circle at 58% 52%, black 0%, black 30%, transparent 54%)',
+            }}
+          />
+
+          <div className="relative z-20 max-w-[680px] pt-20 sm:pt-24 md:pt-28 lg:pt-0">
+            <h1 className="animate-fade-up delay-100 font-['DM_Serif_Display'] leading-[1.02] tracking-[-0.02em] text-slate-900 mb-5 text-[clamp(52px,15vw,76px)] md:mb-6 md:text-[85px]">Know what’s worth taking before you take it.</h1>
+            <p className="animate-fade-up delay-200 font-inter text-[16px] sm:text-[18px] md:text-[20px] leading-[1.6] text-slate-900/65 max-w-[520px] mb-8 md:mb-10" style={{ fontWeight: 500 }}>
               NuTri is building a smarter supplement experience. Join the waitlist to get early access, launch updates, and priority entry when we open.
             </p>
             <div className="animate-fade-up delay-300 flex flex-col items-start gap-4">
             </div>
           </div>
           <div 
-            className="animate-fade-up delay-400 pointer-events-none absolute -right-[58%] top-[430px] z-10 flex h-[450px] w-[450px] items-center justify-center sm:-right-[36%] sm:top-[330px] sm:h-[560px] sm:w-[560px] md:-right-[28%] md:top-[230px] md:h-[650px] md:w-[650px] lg:relative lg:right-auto lg:top-auto lg:h-[650px] lg:w-full lg:justify-end"
+            className="animate-fade-up delay-400 pointer-events-none absolute right-[-7vw] top-1/2 z-10 hidden h-[720px] w-[720px] -translate-y-1/2 items-center justify-center lg:flex"
             style={{ mixBlendMode: 'screen' }}
           >
             <div className="relative w-full h-full flex items-center justify-center animate-float">
@@ -41,20 +54,20 @@ export default function Home() {
                 muted 
                 playsInline
                 poster="/orb-poster.png"
-                className="max-w-none w-[120%] h-[120%] object-contain"
+                className="max-w-none h-[120%] w-[120%] object-contain"
                 style={{ 
-                  filter: 'hue-rotate(-55deg) saturate(250%) brightness(1.2) contrast(1.1)', 
-                  transform: 'scale(1.25) translateX(5%)'
+                  filter: 'hue-rotate(-55deg) saturate(250%) brightness(1.2) contrast(1.1)',
+                  transform: 'scale(1.22) translateX(5%)'
                 }}
               >
                 <source src="/orb-purple.webm" type="video/webm" />
               </video>
             </div>
           </div>
-        </div>
+        </section>
       </main>
 
-      <section id="waitlist" className="animate-fade-up delay-500 w-full max-w-[760px] mx-auto z-20 relative mt-8 md:mt-16 lg:mt-24 mb-16 md:mb-24">
+      <section id="waitlist" className="animate-fade-up delay-500 w-full max-w-[760px] mx-auto z-20 relative mt-16 md:mt-20 lg:mt-24 mb-16 md:mb-24 scroll-mt-24 md:scroll-mt-28">
         <div className="relative isolate w-full flex flex-col items-center p-8 md:p-12 lg:p-14 rounded-[28px] backdrop-blur-[30px] backdrop-saturate-150 bg-[rgba(255,255,255,0.18)] border border-[rgba(255,255,255,0.5)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.6),inset_0_4px_20px_rgba(255,255,255,0.2),0_20px_60px_rgba(0,0,0,0.05)] before:content-[''] before:absolute before:top-1/2 before:left-1/2 before:-translate-x-1/2 before:-translate-y-1/2 before:-z-10 before:w-[260px] before:h-[260px] before:bg-[#319AFF]/50 before:blur-[70px] before:rounded-full before:animate-pulse before:pointer-events-none">
           <h2 className="font-['DM_Serif_Display'] font-bold text-3xl md:text-[42px] leading-[1.1] tracking-[-1px] text-slate-900 text-center mb-4 md:mb-5">
             Get early access to NuTri

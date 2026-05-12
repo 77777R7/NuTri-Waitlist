@@ -94,7 +94,7 @@ export const AnimatedNavbar: React.FC<AnimatedNavbarProps> = ({ isMounted }) => 
 
   return (
     <nav 
-      className={`sticky top-3 md:top-[30px] z-50 w-full max-w-4xl mx-auto transition-all duration-1000 ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}
+      className={`sticky top-[calc(env(safe-area-inset-top,0px)+12px)] md:top-[30px] z-50 w-full max-w-4xl mx-auto transition-all duration-1000 ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}
     >
       {/* Unified Background (when not scrolled) */}
       <AnimatePresence>
