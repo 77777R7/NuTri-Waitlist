@@ -1,5 +1,6 @@
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const BEEHIIV_API_BASE = 'https://api.beehiiv.com/v2';
+const ATTRIBUTION_FIELDS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'];
 
 function sendJson(status, body, headers = {}) {
   return Response.json(body, {
@@ -23,6 +24,12 @@ function getBeehiivErrorMessage(payload) {
       .join(' ');
   }
   return JSON.stringify(payload);
+}
+
+function cleanAttributionValue(value) {
+  if (typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  return trimmed ? trimmed.slice(0, 200) : '';
 }
 
 async function handleRequest(request) {
@@ -70,11 +77,19 @@ async function handleRequest(request) {
     email,
     reactivate_existing: false,
     send_welcome_email: process.env.BEEHIIV_SEND_WELCOME_EMAIL === 'true',
-    utm_source: 'trynutri.app',
-    utm_medium: 'waitlist_form',
-    utm_campaign: 'waitlist_launch',
-    referring_site: request.headers.get('referer') || 'https://trynutri.app',
+    utm_source: cleanAttributionValue(body.utm_source) || 'trynutri.app',
+    utm_medium: cleanAttributionValue(body.utm_medium) || 'waitlist_form',
+    utm_campaign: cleanAttributionValue(body.utm_campaign) || 'waitlist_launch',
+    referring_site:
+      cleanAttributionValue(body.referring_site) ||
+      cleanAttributionValue(request.headers.get('referer')) ||
+      'https://trynutri.app',
   };
+
+  ATTRIBUTION_FIELDS.forEach((field) => {
+    const value = cleanAttributionValue(body[field]);
+    if (value) subscribePayload[field] = value;
+  });
 
   const doubleOptOverride = process.env.BEEHIIV_DOUBLE_OPT_OVERRIDE;
   if (['on', 'off', 'not_set'].includes(doubleOptOverride)) {

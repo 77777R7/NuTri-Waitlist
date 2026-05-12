@@ -24,4 +24,11 @@
 
   - `BEEHIIV_SEND_WELCOME_EMAIL=false`
   - `BEEHIIV_DOUBLE_OPT_OVERRIDE=` (`on`, `off`, or `not_set`)
+
+  The waitlist form passes UTM attribution from the current URL to beehiiv. Use
+  platform-specific links when sharing NuTri:
+
+  - LinkedIn: `https://trynutri.app/?utm_source=linkedin&utm_medium=social&utm_campaign=waitlist_launch`
+  - Instagram: `https://trynutri.app/?utm_source=instagram&utm_medium=social&utm_campaign=waitlist_launch`
+  - Instagram bio: `https://trynutri.app/?utm_source=instagram&utm_medium=social&utm_campaign=waitlist_launch&utm_content=bio`
   

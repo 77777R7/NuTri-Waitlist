@@ -7,6 +7,51 @@ import logo1 from '../../imports/image.png';
 import logo2 from '../../imports/image-1.png';
 import logo3 from '../../imports/image-2.png';
 
+const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'] as const;
+type UTMKey = (typeof UTM_KEYS)[number];
+type WaitlistAttribution = Partial<Record<UTMKey, string>> & {
+  referring_site?: string;
+};
+
+function cleanAttributionValue(value: string | null) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed.slice(0, 200) : '';
+}
+
+function readWaitlistAttribution(): WaitlistAttribution {
+  const params = new URLSearchParams(window.location.search);
+  const attribution: WaitlistAttribution = {};
+  let hasUrlAttribution = false;
+
+  UTM_KEYS.forEach((key) => {
+    const value = cleanAttributionValue(params.get(key));
+    if (value) {
+      attribution[key] = value;
+      hasUrlAttribution = true;
+    }
+  });
+
+  if (hasUrlAttribution) {
+    try {
+      sessionStorage.setItem('nutri_waitlist_attribution', JSON.stringify(attribution));
+    } catch {
+      // Attribution should never block a signup if browser storage is unavailable.
+    }
+  } else {
+    try {
+      const storedAttribution = sessionStorage.getItem('nutri_waitlist_attribution');
+      if (storedAttribution) {
+        Object.assign(attribution, JSON.parse(storedAttribution));
+      }
+    } catch {
+      sessionStorage.removeItem('nutri_waitlist_attribution');
+    }
+  }
+
+  attribution.referring_site = cleanAttributionValue(document.referrer) || window.location.href;
+  return attribution;
+}
+
 export default function Home() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [email, setEmail] = useState('');
@@ -39,10 +84,11 @@ export default function Home() {
     setWaitlistMessage('');
 
     try {
+      const attribution = readWaitlistAttribution();
       const response = await fetch('/api/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: submittedEmail, company }),
+        body: JSON.stringify({ email: submittedEmail, company, ...attribution }),
       });
 
       const result = await response.json().catch(() => ({}));
