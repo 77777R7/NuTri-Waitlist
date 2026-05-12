@@ -30,7 +30,7 @@ export default function Home() {
             </div>
           </div>
           <div 
-            className="animate-fade-up delay-400 pointer-events-none absolute right-[-7vw] top-1/2 z-10 hidden h-[720px] w-[720px] -translate-y-1/2 items-center justify-center lg:flex"
+            className="animate-fade-up delay-400 pointer-events-none absolute right-[2vw] top-[56%] z-10 hidden h-[680px] w-[680px] -translate-y-1/2 items-center justify-center lg:flex"
             style={{ mixBlendMode: 'screen' }}
           >
             <div className="relative w-full h-full flex items-center justify-center animate-float">
@@ -41,10 +41,10 @@ export default function Home() {
                 muted 
                 playsInline
                 poster="/orb-poster.png"
-                className="max-w-none h-[120%] w-[120%] object-contain"
+                className="max-w-none h-[108%] w-[108%] object-contain"
                 style={{ 
                   filter: 'hue-rotate(-55deg) saturate(250%) brightness(1.2) contrast(1.1)',
-                  transform: 'scale(1.22) translateX(5%)'
+                  transform: 'scale(1.04)'
                 }}
               >
                 <source src="/orb-purple.webm" type="video/webm" />

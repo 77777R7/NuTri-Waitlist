@@ -88,10 +88,16 @@ export default function RootLayout() {
           animation: bgFloat 30s ease-in-out infinite;
         }
 
-        /* Hide scrollbar for clean look */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
+        html, body {
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+
+        ::-webkit-scrollbar {
+          width: 0;
+          height: 0;
+          display: none;
+        }
       `}} />
 
       {/* Background System: White base + Animated Image + Blurred Gradient Glows */}
