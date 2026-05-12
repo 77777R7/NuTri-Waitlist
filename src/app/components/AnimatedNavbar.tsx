@@ -340,7 +340,7 @@ export const AnimatedNavbar: React.FC<AnimatedNavbarProps> = ({ isMounted }) => 
           style={{ height: 0, opacity: 0, visibility: 'hidden' }}
         >
           <div className="grid grid-cols-1 gap-2 pt-3">
-            {['App Overview', 'Home', 'About', 'Waitlist', 'Contact'].map(renderMobileLink)}
+            {['Home', 'App Overview', 'About', 'Waitlist', 'Contact'].map(renderMobileLink)}
           </div>
         </div>
 
