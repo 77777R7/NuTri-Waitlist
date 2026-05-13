@@ -188,7 +188,7 @@ export default function Home() {
           <div className="relative z-20 max-w-[680px]">
             <h1 className="animate-fade-up delay-100 font-['DM_Serif_Display'] leading-[1.02] tracking-[-0.02em] text-slate-900 mb-5 text-[clamp(50px,14vw,68px)] md:mb-6 md:text-[76px] lg:text-[85px]">Know what’s worth taking before you take it.</h1>
             <p className="animate-fade-up delay-200 font-inter text-[16px] sm:text-[18px] md:text-[20px] leading-[1.6] text-slate-900/65 max-w-[520px] mb-8 md:mb-10" style={{ fontWeight: 500 }}>
-              NuTri is building a smarter supplement experience. Join the waitlist to get early access, launch updates, and priority entry when we open.
+              NuTri is building a smarter supplement experience. Join the waitlist to get launch updates and a 3-day starting trial.
             </p>
             <div className="animate-fade-up delay-300 flex flex-col items-start gap-4">
             </div>
