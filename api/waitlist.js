@@ -408,6 +408,12 @@ async function updateReferralMilestoneCustomFields(event) {
     });
 
     if (fieldUpdate.response.ok) {
+      console.info('beehiiv referral milestone custom fields synced', {
+        eventId: event.event_id,
+        fieldCount: Array.isArray(fieldUpdate.payload?.data?.custom_fields)
+          ? fieldUpdate.payload.data.custom_fields.length
+          : null,
+      });
       return fieldUpdate.payload;
     }
 
