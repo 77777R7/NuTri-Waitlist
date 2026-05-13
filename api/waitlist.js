@@ -6,6 +6,7 @@ const ATTRIBUTION_FIELDS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_con
 const REFERRAL_CAMPAIGN = 'trial_bonus_invite';
 const REFERRAL_CODE_PATTERN = /^[a-f0-9]{12}$/;
 const DEFAULT_SITE_URL = 'https://trynutri.app';
+const SUPABASE_RPC_PATH = '/rest/v1/rpc';
 
 function sendJson(status, body, headers = {}) {
   return Response.json(body, {
@@ -59,23 +60,333 @@ function getSiteUrl() {
 
 function buildReferralInvite(email) {
   const code = createReferralCode(email);
-  const params = new URLSearchParams({
-    ref: code,
-    utm_source: 'referral',
-    utm_medium: 'invite_link',
-    utm_campaign: REFERRAL_CAMPAIGN,
-    utm_content: code,
-  });
 
   return {
     code,
-    inviteUrl: `${getSiteUrl()}/?${params.toString()}`,
+    inviteUrl: `${getSiteUrl()}/?ref=${code}`,
     tiers: [
       { friends: 1, bonusDays: 1, totalTrialDays: 4 },
       { friends: 2, bonusDays: 2, totalTrialDays: 5 },
       { friends: 3, bonusDays: 4, totalTrialDays: 7 },
     ],
   };
+}
+
+function splitEnvList(value) {
+  if (!value) return [];
+  return String(value)
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function getSupabaseConfig() {
+  const url = process.env.NUTRI_SUPABASE_URL || process.env.SUPABASE_URL;
+  const serviceRoleKey =
+    process.env.NUTRI_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !serviceRoleKey) return null;
+
+  return {
+    url: url.replace(/\/+$/, ''),
+    serviceRoleKey,
+  };
+}
+
+function getBeehiivConfig() {
+  const apiKey = process.env.BEEHIIV_API_KEY;
+  const publicationId = process.env.BEEHIIV_PUBLICATION_ID;
+
+  if (!apiKey || !publicationId) return null;
+
+  return { apiKey, publicationId };
+}
+
+function getDoubleOptOverride() {
+  const doubleOptOverride = process.env.BEEHIIV_DOUBLE_OPT_OVERRIDE;
+  return ['on', 'off', 'not_set'].includes(doubleOptOverride) ? doubleOptOverride : '';
+}
+
+function getBeehiivData(payload) {
+  if (!payload || typeof payload !== 'object') return null;
+  return payload.data && typeof payload.data === 'object' ? payload.data : payload;
+}
+
+function getBeehiivSubscriptionId(payload) {
+  const data = getBeehiivData(payload);
+  return data?.id || data?.subscription_id || payload?.subscription?.id || null;
+}
+
+function getBeehiivSubscriptionStatus(payload, fallback = null) {
+  const data = getBeehiivData(payload);
+  return data?.status || payload?.status || fallback;
+}
+
+function buildUtmPayload(body, request, referredByCode) {
+  const utm = {
+    utm_source: cleanAttributionValue(body.utm_source) || 'trynutri.app',
+    utm_medium: cleanAttributionValue(body.utm_medium) || 'waitlist_form',
+    utm_campaign: cleanAttributionValue(body.utm_campaign) || 'waitlist_launch',
+  };
+
+  ATTRIBUTION_FIELDS.forEach((field) => {
+    const value = cleanAttributionValue(body[field]);
+    if (value) utm[field] = value;
+  });
+
+  if (referredByCode) {
+    utm.utm_source = 'referral';
+    utm.utm_medium = 'invite_link';
+    utm.utm_campaign = REFERRAL_CAMPAIGN;
+    utm.utm_content = referredByCode;
+  }
+
+  const referringSite =
+    cleanAttributionValue(body.referring_site) ||
+    cleanAttributionValue(request.headers.get('referer')) ||
+    getSiteUrl();
+
+  return { utm, referringSite };
+}
+
+function buildBeehiivCustomFields({ email, referralInvite, referredByCode, ledgerRow }) {
+  return [
+    { name: 'NuTri Referral Code', value: referralInvite.code },
+    { name: 'NuTri Invite Link', value: referralInvite.inviteUrl },
+    { name: 'NuTri Referred By Code', value: referredByCode || '' },
+    { name: 'NuTri Waitlist Referred Count', value: String(ledgerRow?.referred_count ?? 0) },
+    { name: 'NuTri Trial Days', value: String(ledgerRow?.total_trial_days ?? 3) },
+    { name: 'NuTri Signup Email', value: email },
+  ];
+}
+
+async function callSupabaseRpc(functionName, payload) {
+  const config = getSupabaseConfig();
+
+  if (!config) {
+    throw new Error('Supabase waitlist ledger is missing NUTRI_SUPABASE_URL or service role key');
+  }
+
+  const response = await fetch(`${config.url}${SUPABASE_RPC_PATH}/${functionName}`, {
+    method: 'POST',
+    headers: {
+      apikey: config.serviceRoleKey,
+      Authorization: `Bearer ${config.serviceRoleKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const responsePayload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const message = getBeehiivErrorMessage(responsePayload) || response.statusText;
+    throw new Error(`Supabase RPC ${functionName} failed (${response.status}): ${message}`);
+  }
+
+  return responsePayload;
+}
+
+async function registerWaitlistSignup({
+  email,
+  referralCode,
+  referredByCode,
+  utm,
+  referringSite,
+  beehiivSubscriptionId = null,
+  beehiivStatus = null,
+  signupStatus = 'active',
+  metadata = {},
+}) {
+  const data = await callSupabaseRpc('register_waitlist_signup', {
+    p_email: email,
+    p_referral_code: referralCode,
+    p_referred_by_code: referredByCode || null,
+    p_utm: utm,
+    p_beehiiv_subscription_id: beehiivSubscriptionId,
+    p_beehiiv_status: beehiivStatus,
+    p_signup_status: signupStatus,
+    p_referring_site: referringSite,
+    p_metadata: metadata,
+  });
+
+  return Array.isArray(data) ? data[0] : data;
+}
+
+async function markMilestoneEvent(eventId, eventStatus, beehiivResponse) {
+  if (!eventId) return;
+
+  await callSupabaseRpc('mark_waitlist_referral_milestone_sent', {
+    p_event_id: eventId,
+    p_event_status: eventStatus,
+    p_beehiiv_response: beehiivResponse || {},
+  });
+}
+
+async function beehiivFetch(path, options = {}) {
+  const config = getBeehiivConfig();
+
+  if (!config) {
+    throw new Error('beehiiv is missing BEEHIIV_API_KEY or BEEHIIV_PUBLICATION_ID');
+  }
+
+  const response = await fetch(`${BEEHIIV_API_BASE}/publications/${config.publicationId}${path}`, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${config.apiKey}`,
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+    },
+  });
+  const payload = await response.json().catch(() => null);
+
+  return { response, payload };
+}
+
+async function syncBeehiivSubscription({ email, subscribePayload }) {
+  if (!getBeehiivConfig()) {
+    return {
+      ok: false,
+      signupStatus: 'email_sync_failed',
+      beehiivStatus: 'not_configured',
+      beehiivSubscriptionId: null,
+      error: 'beehiiv is not configured',
+    };
+  }
+
+  try {
+    const { response, payload } = await beehiivFetch('/subscriptions', {
+      method: 'POST',
+      body: JSON.stringify(subscribePayload),
+    });
+
+    if (response.ok) {
+      return {
+        ok: true,
+        signupStatus: 'active',
+        beehiivStatus: getBeehiivSubscriptionStatus(payload, 'active'),
+        beehiivSubscriptionId: getBeehiivSubscriptionId(payload),
+        payload,
+      };
+    }
+
+    const beehiivMessage = getBeehiivErrorMessage(payload);
+    if (/already|duplicate|exist/i.test(beehiivMessage)) {
+      return {
+        ok: true,
+        alreadySubscribed: true,
+        signupStatus: 'duplicate',
+        beehiivStatus: 'duplicate',
+        beehiivSubscriptionId: getBeehiivSubscriptionId(payload),
+        payload,
+      };
+    }
+
+    return {
+      ok: false,
+      rateLimited: response.status === 429,
+      signupStatus: 'email_sync_failed',
+      beehiivStatus: `error_${response.status}`,
+      beehiivSubscriptionId: getBeehiivSubscriptionId(payload),
+      error: beehiivMessage || response.statusText,
+      payload,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      signupStatus: 'email_sync_failed',
+      beehiivStatus: 'network_error',
+      beehiivSubscriptionId: null,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+function getMilestoneEvents(ledgerRow) {
+  const events = ledgerRow?.milestone_events;
+  if (Array.isArray(events)) return events;
+  if (typeof events === 'string') {
+    try {
+      const parsed = JSON.parse(events);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+async function notifyReferralMilestones(events) {
+  if (!events.length) return;
+
+  const automationIds = splitEnvList(
+    process.env.BEEHIIV_REFERRAL_MILESTONE_AUTOMATION_IDS ||
+      process.env.BEEHIIV_REFERRAL_MILESTONE_AUTOMATION_ID
+  );
+
+  if (!automationIds.length || !getBeehiivConfig()) {
+    console.warn('beehiiv referral milestone automation is not configured', {
+      events: events.map((event) => event.event_id),
+    });
+    return;
+  }
+
+  await Promise.all(events.map(async (event) => {
+    const eventId = event.event_id;
+    const inviterEmail = event.inviter_email;
+    const customFields = [
+      { name: 'NuTri Referral Milestone', value: String(event.milestone_friends) },
+      { name: 'NuTri Waitlist Referred Count', value: String(event.referred_count) },
+      { name: 'NuTri Bonus Days', value: String(event.bonus_days) },
+      { name: 'NuTri Trial Days', value: String(event.total_trial_days) },
+    ];
+
+    try {
+      await beehiivFetch(`/subscriptions/by_email/${encodeURIComponent(inviterEmail)}`, {
+        method: 'PUT',
+        body: JSON.stringify({ custom_fields: customFields }),
+      });
+
+      const journeyPayloads = [];
+      for (const automationId of automationIds) {
+        const body = { email: inviterEmail };
+        const doubleOptOverride = getDoubleOptOverride();
+        if (doubleOptOverride) body.double_opt_override = doubleOptOverride;
+
+        const { response, payload } = await beehiivFetch(`/automations/${automationId}/journeys`, {
+          method: 'POST',
+          body: JSON.stringify(body),
+        });
+
+        journeyPayloads.push({
+          automationId,
+          ok: response.ok,
+          status: response.status,
+          payload,
+        });
+
+        if (!response.ok) {
+          throw new Error(getBeehiivErrorMessage(payload) || `beehiiv automation ${automationId} failed`);
+        }
+      }
+
+      await markMilestoneEvent(eventId, 'sent', {
+        automations: journeyPayloads,
+      });
+    } catch (error) {
+      console.error('beehiiv referral milestone notification failed', {
+        eventId,
+        inviterEmail,
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      await markMilestoneEvent(eventId, 'failed', {
+        error: error instanceof Error ? error.message : String(error),
+      }).catch((markError) => {
+        console.error('failed to mark referral milestone event as failed', markError);
+      });
+    }
+  }));
 }
 
 async function handleRequest(request) {
@@ -104,18 +415,42 @@ async function handleRequest(request) {
     });
   }
 
-  const apiKey = process.env.BEEHIIV_API_KEY;
-  const publicationId = process.env.BEEHIIV_PUBLICATION_ID;
-
-  if (!apiKey || !publicationId) {
-    console.error('beehiiv waitlist is missing BEEHIIV_API_KEY or BEEHIIV_PUBLICATION_ID');
+  if (!getSupabaseConfig()) {
+    console.error('Supabase waitlist ledger is missing NUTRI_SUPABASE_URL or service role key');
 
     return sendJson(500, {
       ok: false,
       message:
         process.env.NODE_ENV === 'production'
           ? 'Unable to join the waitlist right now. Please try again soon.'
-          : 'Waitlist is not configured yet.',
+          : 'Supabase waitlist ledger is not configured yet.',
+    });
+  }
+
+  const referralInvite = buildReferralInvite(email);
+  const referralCode = cleanReferralCode(body.ref);
+  const referredByCode = referralCode && referralCode !== referralInvite.code ? referralCode : '';
+  const { utm, referringSite } = buildUtmPayload(body, request, referredByCode);
+
+  let initialLedgerRow;
+  try {
+    initialLedgerRow = await registerWaitlistSignup({
+      email,
+      referralCode: referralInvite.code,
+      referredByCode,
+      utm,
+      referringSite,
+      signupStatus: 'pending_email_sync',
+      metadata: {
+        source: 'website_api',
+        first_seen_at: new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    console.error('Supabase waitlist ledger write failed', error);
+    return sendJson(502, {
+      ok: false,
+      message: 'Unable to join the waitlist right now. Please try again soon.',
     });
   }
 
@@ -123,81 +458,77 @@ async function handleRequest(request) {
     email,
     reactivate_existing: false,
     send_welcome_email: process.env.BEEHIIV_SEND_WELCOME_EMAIL === 'true',
-    utm_source: cleanAttributionValue(body.utm_source) || 'trynutri.app',
-    utm_medium: cleanAttributionValue(body.utm_medium) || 'waitlist_form',
-    utm_campaign: cleanAttributionValue(body.utm_campaign) || 'waitlist_launch',
-    referring_site:
-      cleanAttributionValue(body.referring_site) ||
-      cleanAttributionValue(request.headers.get('referer')) ||
-      'https://trynutri.app',
+    referring_site: referringSite,
+    ...utm,
+    custom_fields: buildBeehiivCustomFields({
+      email,
+      referralInvite,
+      referredByCode,
+      ledgerRow: initialLedgerRow,
+    }),
   };
 
-  ATTRIBUTION_FIELDS.forEach((field) => {
-    const value = cleanAttributionValue(body[field]);
-    if (value) subscribePayload[field] = value;
-  });
-
-  const referralCode = cleanReferralCode(body.ref);
-  const subscriberReferralCode = createReferralCode(email);
-  if (referralCode && referralCode !== subscriberReferralCode) {
-    subscribePayload.utm_source = 'referral';
-    subscribePayload.utm_medium = 'invite_link';
-    subscribePayload.utm_campaign = REFERRAL_CAMPAIGN;
-    subscribePayload.utm_content = referralCode;
+  if (referredByCode) {
+    subscribePayload.referral_code = referredByCode;
   }
 
-  const doubleOptOverride = process.env.BEEHIIV_DOUBLE_OPT_OVERRIDE;
-  if (['on', 'off', 'not_set'].includes(doubleOptOverride)) {
+  const welcomeAutomationIds = splitEnvList(
+    process.env.BEEHIIV_WELCOME_AUTOMATION_IDS || process.env.BEEHIIV_WELCOME_AUTOMATION_ID
+  );
+  if (welcomeAutomationIds.length) {
+    subscribePayload.automation_ids = welcomeAutomationIds;
+  }
+
+  const doubleOptOverride = getDoubleOptOverride();
+  if (doubleOptOverride) {
     subscribePayload.double_opt_override = doubleOptOverride;
   }
 
-  const beehiivResponse = await fetch(
-    `${BEEHIIV_API_BASE}/publications/${publicationId}/subscriptions`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
+  const beehiivResult = await syncBeehiivSubscription({ email, subscribePayload });
+
+  let finalLedgerRow = initialLedgerRow;
+  try {
+    finalLedgerRow = await registerWaitlistSignup({
+      email,
+      referralCode: referralInvite.code,
+      referredByCode,
+      utm,
+      referringSite,
+      beehiivSubscriptionId: beehiivResult.beehiivSubscriptionId,
+      beehiivStatus: beehiivResult.beehiivStatus,
+      signupStatus: beehiivResult.signupStatus,
+      metadata: {
+        source: 'website_api',
+        beehiiv_synced_at: beehiivResult.ok ? new Date().toISOString() : null,
+        beehiiv_error: beehiivResult.ok ? null : beehiivResult.error || 'unknown',
       },
-      body: JSON.stringify(subscribePayload),
-    }
-  );
+    });
+  } catch (error) {
+    console.error('Supabase waitlist beehiiv sync status update failed', error);
+  }
 
-  const beehiivPayload = await beehiivResponse.json().catch(() => null);
+  await notifyReferralMilestones(getMilestoneEvents(initialLedgerRow));
 
-  if (beehiivResponse.ok) {
-    return sendJson(200, {
-      ok: true,
-      message: 'You are on the NuTri waitlist.',
-      referral: buildReferralInvite(email),
+  if (!beehiivResult.ok) {
+    console.error('beehiiv waitlist email sync failed after Supabase ledger write', {
+      status: beehiivResult.beehiivStatus,
+      error: beehiivResult.error,
     });
   }
 
-  const beehiivMessage = getBeehiivErrorMessage(beehiivPayload);
-  if (/already|duplicate|exist/i.test(beehiivMessage)) {
-    return sendJson(200, {
-      ok: true,
-      alreadySubscribed: true,
-      message: 'You are already on the NuTri waitlist.',
-      referral: buildReferralInvite(email),
-    });
-  }
-
-  if (beehiivResponse.status === 429) {
-    return sendJson(429, {
-      ok: false,
-      message: 'Too many signup attempts. Please try again in a minute.',
-    });
-  }
-
-  console.error('beehiiv waitlist error', {
-    status: beehiivResponse.status,
-    body: beehiivPayload,
-  });
-
-  return sendJson(502, {
-    ok: false,
-    message: 'Unable to join the waitlist right now. Please try again soon.',
+  return sendJson(200, {
+    ok: true,
+    alreadySubscribed: Boolean(beehiivResult.alreadySubscribed),
+    emailSync: beehiivResult.ok,
+    message: beehiivResult.alreadySubscribed
+      ? 'You are already on the NuTri waitlist.'
+      : 'You are on the NuTri waitlist.',
+    referral: {
+      ...referralInvite,
+      referredCount: finalLedgerRow?.referred_count ?? 0,
+      totalTrialDays: finalLedgerRow?.total_trial_days ?? 3,
+      bonusDays: finalLedgerRow?.bonus_days ?? 0,
+    },
   });
 }
 
