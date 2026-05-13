@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { CheckCircle2, CircleAlert } from 'lucide-react';
+import { CheckCircle2, CircleAlert, Copy, Gift, Users } from 'lucide-react';
 import { Link } from 'react-router';
 import '../../styles/logoloop.css';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
@@ -8,14 +8,56 @@ import logo2 from '../../imports/image-1.png';
 import logo3 from '../../imports/image-2.png';
 
 const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'] as const;
+const REFERRAL_STORAGE_KEY = 'nutri_waitlist_referral';
 type UTMKey = (typeof UTM_KEYS)[number];
 type WaitlistAttribution = Partial<Record<UTMKey, string>> & {
   referring_site?: string;
+  ref?: string;
+};
+type ReferralInvite = {
+  code: string;
+  inviteUrl: string;
+  tiers: {
+    friends: number;
+    bonusDays: number;
+    totalTrialDays: number;
+  }[];
 };
 
 function cleanAttributionValue(value: string | null) {
   const trimmed = value?.trim();
   return trimmed ? trimmed.slice(0, 200) : '';
+}
+
+function cleanReferralCode(value: string | null) {
+  const trimmed = value?.trim().toLowerCase();
+  if (!trimmed || !/^[a-z0-9_-]{6,64}$/.test(trimmed)) return '';
+  return trimmed.slice(0, 64);
+}
+
+function readIncomingReferralCode() {
+  const params = new URLSearchParams(window.location.search);
+  const urlReferralCode = cleanReferralCode(params.get('ref'));
+
+  if (urlReferralCode) {
+    try {
+      sessionStorage.setItem(REFERRAL_STORAGE_KEY, urlReferralCode);
+    } catch {
+      // Referral capture should never block a signup if browser storage is unavailable.
+    }
+    return urlReferralCode;
+  }
+
+  try {
+    return cleanReferralCode(sessionStorage.getItem(REFERRAL_STORAGE_KEY));
+  } catch {
+    try {
+      sessionStorage.removeItem(REFERRAL_STORAGE_KEY);
+    } catch {
+      // Ignore storage cleanup failures in restricted browser contexts.
+    }
+    return '';
+  }
 }
 
 function readWaitlistAttribution(): WaitlistAttribution {
@@ -48,6 +90,11 @@ function readWaitlistAttribution(): WaitlistAttribution {
     }
   }
 
+  const referralCode = readIncomingReferralCode();
+  if (referralCode) {
+    attribution.ref = referralCode;
+  }
+
   attribution.referring_site = cleanAttributionValue(document.referrer) || window.location.href;
   return attribution;
 }
@@ -57,8 +104,13 @@ export default function Home() {
   const [email, setEmail] = useState('');
   const [waitlistStatus, setWaitlistStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [waitlistMessage, setWaitlistMessage] = useState('');
+  const [incomingReferralCode, setIncomingReferralCode] = useState('');
+  const [referralInvite, setReferralInvite] = useState<ReferralInvite | null>(null);
+  const [inviteCopied, setInviteCopied] = useState(false);
 
   useEffect(() => {
+    setIncomingReferralCode(readIncomingReferralCode());
+
     // Force muted and play to ensure autoplay works across all browsers (like Safari/iOS)
     if (videoRef.current) {
       videoRef.current.defaultMuted = true;
@@ -99,11 +151,34 @@ export default function Home() {
 
       setWaitlistStatus('success');
       setWaitlistMessage(result.message || 'You are on the NuTri waitlist.');
+      setReferralInvite(result.referral || null);
+      setInviteCopied(false);
       setEmail('');
     } catch (error) {
       setWaitlistStatus('error');
       setWaitlistMessage(error instanceof Error ? error.message : 'Unable to join the waitlist right now.');
     }
+  };
+
+  const handleCopyInvite = async () => {
+    if (!referralInvite) return;
+
+    try {
+      await navigator.clipboard.writeText(referralInvite.inviteUrl);
+    } catch {
+      const textArea = document.createElement('textarea');
+      textArea.value = referralInvite.inviteUrl;
+      textArea.setAttribute('readonly', 'true');
+      textArea.style.position = 'fixed';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+    }
+
+    setInviteCopied(true);
+    window.setTimeout(() => setInviteCopied(false), 1800);
   };
 
   return (
@@ -152,6 +227,19 @@ export default function Home() {
             Get early access to NuTri
           </h2>
           <p className="font-inter text-[15px] md:text-[17px] leading-[1.6] text-slate-900/65 text-center max-w-[500px] mb-8 md:mb-10">Be the first to know when we launch. Join the waitlist for beta access, launch updates, and <span className="font-bold">Founding Member Pricing.</span></p>
+          {incomingReferralCode && waitlistStatus !== 'success' && (
+            <div className="mb-5 flex w-full max-w-[500px] items-start gap-3 rounded-[22px] border border-white/60 bg-white/35 px-4 py-3 text-left text-slate-900 shadow-[inset_0_1px_1px_rgba(255,255,255,0.75),0_12px_30px_rgba(15,23,42,0.06)] backdrop-blur-[18px]">
+              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white" aria-hidden="true">
+                <Users className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="font-inter text-sm font-bold">You came from a friend's invite.</p>
+                <p className="mt-1 font-inter text-sm leading-[1.45] text-slate-900/65">
+                  Join with your email and this signup will count toward their extra NuTri trial days.
+                </p>
+              </div>
+            </div>
+          )}
           <form className="w-full max-w-[500px] flex flex-col md:flex-row gap-3 md:gap-2 mb-4" onSubmit={handleWaitlistSubmit}>
             <input
               type="text"
@@ -213,6 +301,50 @@ export default function Home() {
                   {waitlistStatus === 'success' ? 'We saved your spot and will use this email for NuTri launch updates.' : waitlistMessage}
                 </p>
               </div>
+            </div>
+          )}
+          {waitlistStatus === 'success' && referralInvite && (
+            <div className="mb-5 w-full max-w-[500px] rounded-[26px] border border-white/60 bg-white/35 p-4 text-left shadow-[inset_0_1px_1px_rgba(255,255,255,0.75),0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-[20px]">
+              <div className="mb-4 flex items-start gap-3">
+                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white" aria-hidden="true">
+                  <Gift className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className="font-inter text-sm font-bold text-slate-950">Invite friends, unlock more trial days</p>
+                  <p className="mt-1 font-inter text-sm leading-[1.45] text-slate-900/65">
+                    Everyone starts with a 3-day trial. Confirmed friends who join from your link add bonus days at launch.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mb-4 grid grid-cols-3 gap-2">
+                {referralInvite.tiers.map((tier) => (
+                  <div key={tier.friends} className="rounded-[18px] border border-white/55 bg-white/40 px-3 py-3 text-center">
+                    <p className="font-inter text-[11px] font-bold uppercase tracking-[0.08em] text-slate-900/45">
+                      {tier.friends} {tier.friends === 1 ? 'friend' : 'friends'}
+                    </p>
+                    <p className="mt-1 font-inter text-lg font-black text-slate-950">+{tier.bonusDays}d</p>
+                    <p className="font-inter text-[11px] font-semibold text-slate-900/50">{tier.totalTrialDays} days total</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <div className="min-w-0 flex-1 rounded-full border border-slate-900/15 bg-white/60 px-4 py-3 font-inter text-xs font-semibold text-slate-900/65">
+                  <span className="block truncate">{referralInvite.inviteUrl}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCopyInvite}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-slate-950 px-5 font-inter text-sm font-bold text-white shadow-[0_10px_24px_rgba(15,23,42,0.18)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <Copy className="h-4 w-4" />
+                  {inviteCopied ? 'Copied' : 'Copy'}
+                </button>
+              </div>
+              <p className="mt-3 font-inter text-[12px] leading-[1.45] text-slate-900/45">
+                We count unique confirmed waitlist signups from this link. Self-referrals do not count.
+              </p>
             </div>
           )}
           <p className="text-xs text-slate-900/45 font-medium text-center">

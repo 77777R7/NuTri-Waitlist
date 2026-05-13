@@ -1,6 +1,10 @@
+import { createHmac } from 'node:crypto';
+
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const BEEHIIV_API_BASE = 'https://api.beehiiv.com/v2';
 const ATTRIBUTION_FIELDS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'];
+const REFERRAL_CAMPAIGN = 'trial_bonus_invite';
+const REFERRAL_CODE_PATTERN = /^[a-f0-9]{12}$/;
 
 function sendJson(status, body, headers = {}) {
   return Response.json(body, {
@@ -30,6 +34,50 @@ function cleanAttributionValue(value) {
   if (typeof value !== 'string') return '';
   const trimmed = value.trim();
   return trimmed ? trimmed.slice(0, 200) : '';
+}
+
+function cleanReferralCode(value) {
+  if (typeof value !== 'string') return '';
+  const trimmed = value.trim().toLowerCase();
+  return REFERRAL_CODE_PATTERN.test(trimmed) ? trimmed : '';
+}
+
+function getReferralSecret() {
+  return process.env.REFERRAL_LINK_SECRET || process.env.BEEHIIV_API_KEY || 'nutri-waitlist-local-referrals';
+}
+
+function createReferralCode(email) {
+  return createHmac('sha256', getReferralSecret()).update(email).digest('hex').slice(0, 12);
+}
+
+function getSiteUrl() {
+  const configuredUrl =
+    process.env.NUTRI_SITE_URL ||
+    process.env.SITE_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://trynutri.app');
+
+  return configuredUrl.replace(/\/+$/, '');
+}
+
+function buildReferralInvite(email) {
+  const code = createReferralCode(email);
+  const params = new URLSearchParams({
+    ref: code,
+    utm_source: 'referral',
+    utm_medium: 'invite_link',
+    utm_campaign: REFERRAL_CAMPAIGN,
+    utm_content: code,
+  });
+
+  return {
+    code,
+    inviteUrl: `${getSiteUrl()}/?${params.toString()}`,
+    tiers: [
+      { friends: 1, bonusDays: 1, totalTrialDays: 4 },
+      { friends: 2, bonusDays: 2, totalTrialDays: 5 },
+      { friends: 3, bonusDays: 4, totalTrialDays: 7 },
+    ],
+  };
 }
 
 async function handleRequest(request) {
@@ -91,6 +139,15 @@ async function handleRequest(request) {
     if (value) subscribePayload[field] = value;
   });
 
+  const referralCode = cleanReferralCode(body.ref);
+  const subscriberReferralCode = createReferralCode(email);
+  if (referralCode && referralCode !== subscriberReferralCode) {
+    subscribePayload.utm_source = 'referral';
+    subscribePayload.utm_medium = 'invite_link';
+    subscribePayload.utm_campaign = REFERRAL_CAMPAIGN;
+    subscribePayload.utm_content = referralCode;
+  }
+
   const doubleOptOverride = process.env.BEEHIIV_DOUBLE_OPT_OVERRIDE;
   if (['on', 'off', 'not_set'].includes(doubleOptOverride)) {
     subscribePayload.double_opt_override = doubleOptOverride;
@@ -114,6 +171,7 @@ async function handleRequest(request) {
     return sendJson(200, {
       ok: true,
       message: 'You are on the NuTri waitlist.',
+      referral: buildReferralInvite(email),
     });
   }
 
@@ -123,6 +181,7 @@ async function handleRequest(request) {
       ok: true,
       alreadySubscribed: true,
       message: 'You are already on the NuTri waitlist.',
+      referral: buildReferralInvite(email),
     });
   }
 
