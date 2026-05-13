@@ -226,7 +226,9 @@ export default function Home() {
           <h2 className="font-['DM_Serif_Display'] font-bold text-3xl md:text-[42px] leading-[1.1] tracking-[-1px] text-slate-900 text-center mb-4 md:mb-5">
             Get early access to NuTri
           </h2>
-          <p className="font-inter text-[15px] md:text-[17px] leading-[1.6] text-slate-900/65 text-center max-w-[500px] mb-8 md:mb-10">Be the first to know when we launch. Join the waitlist for beta access, launch updates, and <span className="font-bold">Founding Member Pricing.</span></p>
+          <p className="font-inter text-[15px] md:text-[17px] leading-[1.6] text-slate-900/65 text-center max-w-[560px] mb-8 md:mb-10">
+            Join the waitlist for launch access and a 3-day starting trial. Invite friends after signup to unlock up to 4 extra trial days before NuTri opens.
+          </p>
           {incomingReferralCode && waitlistStatus !== 'success' && (
             <div className="mb-5 flex w-full max-w-[500px] items-start gap-3 rounded-[22px] border border-white/60 bg-white/35 px-4 py-3 text-left text-slate-900 shadow-[inset_0_1px_1px_rgba(255,255,255,0.75),0_12px_30px_rgba(15,23,42,0.06)] backdrop-blur-[18px]">
               <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white" aria-hidden="true">
@@ -272,7 +274,7 @@ export default function Home() {
               disabled={waitlistStatus === 'submitting'}
               className="h-[56px] md:h-[64px] px-8 rounded-full bg-black hover:bg-neutral-800 disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-semibold text-[15px] md:text-[16px] shadow-[inset_0_4px_4px_rgba(255,255,255,0.15),0_6px_16px_rgba(0,0,0,0.25)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:hover:scale-100 whitespace-nowrap"
             >
-              {waitlistStatus === 'submitting' ? 'Joining...' : waitlistStatus === 'success' ? "You're In" : 'Reserve My Spot'}
+              {waitlistStatus === 'submitting' ? 'Joining...' : waitlistStatus === 'success' ? "You're In" : 'Join the Waitlist'}
             </button>
           </form>
           {waitlistMessage && (
@@ -348,7 +350,7 @@ export default function Home() {
             </div>
           )}
           <p className="text-xs text-slate-900/45 font-medium text-center">
-            Free to join &middot; No spam &middot; Unsubscribe anytime
+            Free to join &middot; No spam &middot; Share your invite after signup
           </p>
         </div>
       </section>
