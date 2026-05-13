@@ -35,6 +35,21 @@
   - `NUTRI_SITE_URL=https://trynutri.app`
   - `REFERRAL_LINK_SECRET=` stable HMAC secret for short referral codes
 
+beehiiv milestone email requirements:
+
+- The publication must have these custom fields:
+  - `NuTri Referral Milestone`
+  - `NuTri Waitlist Referred Count`
+  - `NuTri Bonus Days`
+  - `NuTri Trial Days`
+- The milestone automation must be an active beehiiv automation with an
+  `Add by API` trigger. A draft automation or an API key without automation
+  journey access will leave Supabase milestone events in `pending`.
+- Set `BEEHIIV_REFERRAL_MILESTONE_AUTOMATION_ID` (or comma-separated
+  `BEEHIIV_REFERRAL_MILESTONE_AUTOMATION_IDS`) on Vercel after the automation is
+  live. The API updates beehiiv custom fields first, then adds the inviter to
+  the automation journey and marks the Supabase event `sent`.
+
   The waitlist form passes UTM attribution from the current URL to beehiiv. Use
   platform-specific links when sharing NuTri:
 
