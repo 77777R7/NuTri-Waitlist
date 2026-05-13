@@ -5,6 +5,7 @@ const BEEHIIV_API_BASE = 'https://api.beehiiv.com/v2';
 const ATTRIBUTION_FIELDS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'];
 const REFERRAL_CAMPAIGN = 'trial_bonus_invite';
 const REFERRAL_CODE_PATTERN = /^[a-f0-9]{12}$/;
+const DEFAULT_SITE_URL = 'https://trynutri.app';
 
 function sendJson(status, body, headers = {}) {
   return Response.json(body, {
@@ -51,10 +52,7 @@ function createReferralCode(email) {
 }
 
 function getSiteUrl() {
-  const configuredUrl =
-    process.env.NUTRI_SITE_URL ||
-    process.env.SITE_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://trynutri.app');
+  const configuredUrl = process.env.NUTRI_SITE_URL || process.env.SITE_URL || DEFAULT_SITE_URL;
 
   return configuredUrl.replace(/\/+$/, '');
 }
