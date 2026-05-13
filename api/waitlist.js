@@ -324,6 +324,31 @@ function getMilestoneEvents(ledgerRow) {
   return [];
 }
 
+function buildReferralMilestoneCustomFields(event) {
+  return [
+    { name: 'NuTri Referral Milestone', value: String(event.milestone_friends) },
+    { name: 'NuTri Waitlist Referred Count', value: String(event.referred_count) },
+    { name: 'NuTri Bonus Days', value: String(event.bonus_days) },
+    { name: 'NuTri Trial Days', value: String(event.total_trial_days) },
+  ];
+}
+
+async function updateReferralMilestoneCustomFields(event) {
+  const fieldUpdate = await beehiivFetch(`/subscriptions/by_email/${encodeURIComponent(event.inviter_email)}`, {
+    method: 'PUT',
+    body: JSON.stringify({ custom_fields: buildReferralMilestoneCustomFields(event) }),
+  });
+
+  if (!fieldUpdate.response.ok) {
+    throw new Error(
+      getBeehiivErrorMessage(fieldUpdate.payload) ||
+        `beehiiv subscription field update failed (${fieldUpdate.response.status})`
+    );
+  }
+
+  return fieldUpdate.payload;
+}
+
 async function notifyReferralMilestones(events) {
   if (!events.length) return { configured: true, processed: 0 };
 
@@ -331,34 +356,53 @@ async function notifyReferralMilestones(events) {
     process.env.BEEHIIV_REFERRAL_MILESTONE_AUTOMATION_IDS ||
       process.env.BEEHIIV_REFERRAL_MILESTONE_AUTOMATION_ID
   );
+  const beehiivConfig = getBeehiivConfig();
 
-  if (!automationIds.length || !getBeehiivConfig()) {
-    console.warn('beehiiv referral milestone automation is not configured', {
+  if (!beehiivConfig) {
+    console.warn('beehiiv referral milestone notification is missing beehiiv config', {
       events: events.map((event) => event.event_id),
     });
     return { configured: false, processed: 0 };
   }
 
-  await Promise.all(events.map(async (event) => {
+  const fieldUpdates = await Promise.all(events.map(async (event) => {
+    try {
+      await updateReferralMilestoneCustomFields(event);
+      return { event, ok: true };
+    } catch (error) {
+      console.error('beehiiv referral milestone custom field update failed', {
+        eventId: event.event_id,
+        inviterEmail: event.inviter_email,
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      return {
+        event,
+        ok: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }));
+
+  if (!automationIds.length) {
+    console.warn('beehiiv referral milestone automation is not configured', {
+      events: events.map((event) => event.event_id),
+    });
+    return {
+      configured: false,
+      processed: 0,
+      fieldUpdates: fieldUpdates.filter((result) => result.ok).length,
+    };
+  }
+
+  await Promise.all(fieldUpdates.map(async (fieldUpdate) => {
+    const event = fieldUpdate.event;
     const eventId = event.event_id;
     const inviterEmail = event.inviter_email;
-    const customFields = [
-      { name: 'NuTri Referral Milestone', value: String(event.milestone_friends) },
-      { name: 'NuTri Waitlist Referred Count', value: String(event.referred_count) },
-      { name: 'NuTri Bonus Days', value: String(event.bonus_days) },
-      { name: 'NuTri Trial Days', value: String(event.total_trial_days) },
-    ];
 
     try {
-      const fieldUpdate = await beehiivFetch(`/subscriptions/by_email/${encodeURIComponent(inviterEmail)}`, {
-        method: 'PUT',
-        body: JSON.stringify({ custom_fields: customFields }),
-      });
-      if (!fieldUpdate.response.ok) {
-        throw new Error(
-          getBeehiivErrorMessage(fieldUpdate.payload) ||
-            `beehiiv subscription field update failed (${fieldUpdate.response.status})`
-        );
+      if (!fieldUpdate.ok) {
+        throw new Error(fieldUpdate.error || 'beehiiv referral milestone custom field update failed');
       }
 
       const journeyPayloads = [];
