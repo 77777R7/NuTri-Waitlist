@@ -462,13 +462,40 @@ async function notifyReferralMilestones(events) {
   }));
 
   if (!automationIds.length) {
-    console.warn('beehiiv referral milestone automation is not configured', {
+    await Promise.all(fieldUpdates.map(async (fieldUpdate) => {
+      const event = fieldUpdate.event;
+      const eventId = event.event_id;
+
+      try {
+        if (fieldUpdate.ok) {
+          await markMilestoneEvent(eventId, 'skipped', {
+            reason: 'beehiiv_automation_not_enabled',
+            customFieldsSynced: true,
+          });
+          return;
+        }
+
+        await markMilestoneEvent(eventId, 'failed', {
+          reason: 'beehiiv_custom_field_sync_failed',
+          error: fieldUpdate.error || 'beehiiv referral milestone custom field update failed',
+        });
+      } catch (markError) {
+        console.error('failed to close referral milestone event without automation', {
+          eventId,
+          error: markError instanceof Error ? markError.message : String(markError),
+        });
+      }
+    }));
+
+    console.info('beehiiv referral milestone automation disabled; milestone email skipped', {
       events: events.map((event) => event.event_id),
+      fieldUpdates: fieldUpdates.filter((result) => result.ok).length,
     });
     return {
       configured: false,
       processed: 0,
       fieldUpdates: fieldUpdates.filter((result) => result.ok).length,
+      skipped: fieldUpdates.filter((result) => result.ok).length,
     };
   }
 

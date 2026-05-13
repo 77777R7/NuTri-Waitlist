@@ -14,10 +14,11 @@
   The custom waitlist form submits to `/api/waitlist`, a Vercel Function that
   writes the signup/referral ledger to Supabase and syncs the subscriber to
   beehiiv for email delivery. Supabase is the source of truth; beehiiv is only
-  used for welcome, nurture, and referral milestone emails.
-  Referral milestone emails are queued in Supabase first; once the beehiiv
-  automation env var is configured, the API also retries a small batch of
-  pending milestone notifications after each signup.
+  used for the subscriber list and newsletter fields in the current MVP.
+  Referral milestone events are recorded in Supabase first. Because beehiiv
+  automation requires a paid membership, the production path does not depend on
+  beehiiv automations: the API syncs the milestone fields to beehiiv and marks
+  the Supabase milestone event `skipped` for email delivery.
 
   Required Vercel environment variables:
 
@@ -30,40 +31,45 @@
 
   - `BEEHIIV_SEND_WELCOME_EMAIL=false`
   - `BEEHIIV_DOUBLE_OPT_OVERRIDE=` (`on`, `off`, or `not_set`)
-  - `BEEHIIV_WELCOME_AUTOMATION_ID=` for the draft/inactive welcome sequence once enabled
-  - `BEEHIIV_REFERRAL_MILESTONE_AUTOMATION_ID=` for the referral milestone notification automation
+  - `BEEHIIV_WELCOME_AUTOMATION_ID=` for a future welcome sequence once enabled
+  - `BEEHIIV_REFERRAL_MILESTONE_AUTOMATION_ID=` for future referral milestone notification automation
   - `NUTRI_SITE_URL=https://trynutri.app`
   - `REFERRAL_LINK_SECRET=` stable HMAC secret for short referral codes
 
-beehiiv milestone email requirements:
+beehiiv milestone field sync:
 
 - The publication must have these custom fields:
   - `NuTri Referral Milestone`
   - `NuTri Waitlist Referred Count`
   - `NuTri Bonus Days`
   - `NuTri Trial Days`
-- The milestone automation must be an active beehiiv automation with an
-  `Add by API` trigger. A draft automation or an API key without automation
-  journey access will leave Supabase milestone events in `pending`.
-- Set `BEEHIIV_REFERRAL_MILESTONE_AUTOMATION_ID` (or comma-separated
-  `BEEHIIV_REFERRAL_MILESTONE_AUTOMATION_IDS`) on Vercel after the automation is
-  live. The API updates beehiiv custom fields first, then adds the inviter to
-  the automation journey and marks the Supabase event `sent`.
+- Current MVP behavior:
+  - Supabase calculates and stores the real referral/trial bonus state.
+  - beehiiv custom fields are synced when a milestone is reached.
+  - The milestone email automation is intentionally disabled, so the Supabase
+    milestone email event is marked `skipped` after field sync instead of being
+    left `pending`.
+- Future paid beehiiv automation upgrade:
+  - Create an active beehiiv automation with an `Add by API` trigger.
+  - Set `BEEHIIV_REFERRAL_MILESTONE_AUTOMATION_ID` or comma-separated
+    `BEEHIIV_REFERRAL_MILESTONE_AUTOMATION_IDS` on Vercel.
+  - The API will update beehiiv custom fields first, add the inviter to the
+    automation journey, and mark the Supabase event `sent`.
 
-  The waitlist form passes UTM attribution from the current URL to beehiiv. Use
-  platform-specific links when sharing NuTri:
+The waitlist form passes UTM attribution from the current URL to beehiiv. Use
+platform-specific links when sharing NuTri:
 
-  - LinkedIn: `https://trynutri.app/?utm_source=linkedin&utm_medium=social&utm_campaign=waitlist_launch`
-  - Instagram: `https://trynutri.app/?utm_source=instagram&utm_medium=social&utm_campaign=waitlist_launch`
-  - Instagram bio: `https://trynutri.app/?utm_source=instagram&utm_medium=social&utm_campaign=waitlist_launch&utm_content=bio`
+- LinkedIn: `https://trynutri.app/?utm_source=linkedin&utm_medium=social&utm_campaign=waitlist_launch`
+- Instagram: `https://trynutri.app/?utm_source=instagram&utm_medium=social&utm_campaign=waitlist_launch`
+- Instagram bio: `https://trynutri.app/?utm_source=instagram&utm_medium=social&utm_campaign=waitlist_launch&utm_content=bio`
 
-  Referral links shown after signup are intentionally short:
-  `https://trynutri.app/?ref=xxxx`.
+Referral links shown after signup are intentionally short:
+`https://trynutri.app/?ref=xxxx`.
 
-  Trial bonus rules are fixed:
+Trial bonus rules are fixed:
 
-  - Default waitlist trial: 3 days
-  - 1 confirmed friend: 4 days total
-  - 2 confirmed friends: 5 days total
-  - 3 or more confirmed friends: 7 days total
+- Default waitlist trial: 3 days
+- 1 confirmed friend: 4 days total
+- 2 confirmed friends: 5 days total
+- 3 or more confirmed friends: 7 days total
   
