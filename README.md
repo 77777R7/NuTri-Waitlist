@@ -15,6 +15,9 @@
   writes the signup/referral ledger to Supabase and syncs the subscriber to
   beehiiv for email delivery. Supabase is the source of truth; beehiiv is only
   used for welcome, nurture, and referral milestone emails.
+  Referral milestone emails are queued in Supabase first; once the beehiiv
+  automation env var is configured, the API also retries a small batch of
+  pending milestone notifications after each signup.
 
   Required Vercel environment variables:
 

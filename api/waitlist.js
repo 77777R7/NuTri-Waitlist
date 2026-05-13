@@ -223,6 +223,14 @@ async function markMilestoneEvent(eventId, eventStatus, beehiivResponse) {
   });
 }
 
+async function claimPendingReferralMilestones(limit = 10) {
+  const data = await callSupabaseRpc('claim_waitlist_referral_milestone_events', {
+    p_limit: limit,
+  });
+
+  return Array.isArray(data) ? data : [];
+}
+
 async function beehiivFetch(path, options = {}) {
   const config = getBeehiivConfig();
 
@@ -317,7 +325,7 @@ function getMilestoneEvents(ledgerRow) {
 }
 
 async function notifyReferralMilestones(events) {
-  if (!events.length) return;
+  if (!events.length) return { configured: true, processed: 0 };
 
   const automationIds = splitEnvList(
     process.env.BEEHIIV_REFERRAL_MILESTONE_AUTOMATION_IDS ||
@@ -328,7 +336,7 @@ async function notifyReferralMilestones(events) {
     console.warn('beehiiv referral milestone automation is not configured', {
       events: events.map((event) => event.event_id),
     });
-    return;
+    return { configured: false, processed: 0 };
   }
 
   await Promise.all(events.map(async (event) => {
@@ -342,10 +350,16 @@ async function notifyReferralMilestones(events) {
     ];
 
     try {
-      await beehiivFetch(`/subscriptions/by_email/${encodeURIComponent(inviterEmail)}`, {
+      const fieldUpdate = await beehiivFetch(`/subscriptions/by_email/${encodeURIComponent(inviterEmail)}`, {
         method: 'PUT',
         body: JSON.stringify({ custom_fields: customFields }),
       });
+      if (!fieldUpdate.response.ok) {
+        throw new Error(
+          getBeehiivErrorMessage(fieldUpdate.payload) ||
+            `beehiiv subscription field update failed (${fieldUpdate.response.status})`
+        );
+      }
 
       const journeyPayloads = [];
       for (const automationId of automationIds) {
@@ -387,6 +401,8 @@ async function notifyReferralMilestones(events) {
       });
     }
   }));
+
+  return { configured: true, processed: events.length };
 }
 
 async function handleRequest(request) {
@@ -507,7 +523,19 @@ async function handleRequest(request) {
     console.error('Supabase waitlist beehiiv sync status update failed', error);
   }
 
-  await notifyReferralMilestones(getMilestoneEvents(initialLedgerRow));
+  const createdMilestoneEvents = getMilestoneEvents(initialLedgerRow);
+  const milestoneNotification = await notifyReferralMilestones(createdMilestoneEvents);
+
+  if (milestoneNotification.configured) {
+    try {
+      const pendingMilestoneEvents = await claimPendingReferralMilestones(10);
+      const createdEventIds = new Set(createdMilestoneEvents.map((event) => event.event_id));
+      const retryEvents = pendingMilestoneEvents.filter((event) => !createdEventIds.has(event.event_id));
+      await notifyReferralMilestones(retryEvents);
+    } catch (error) {
+      console.error('failed to process pending referral milestone events', error);
+    }
+  }
 
   if (!beehiivResult.ok) {
     console.error('beehiiv waitlist email sync failed after Supabase ledger write', {
