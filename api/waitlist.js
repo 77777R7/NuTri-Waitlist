@@ -333,20 +333,36 @@ function buildReferralMilestoneCustomFields(event) {
   ];
 }
 
-async function updateReferralMilestoneCustomFields(event) {
-  const fieldUpdate = await beehiivFetch(`/subscriptions/by_email/${encodeURIComponent(event.inviter_email)}`, {
-    method: 'PUT',
-    body: JSON.stringify({ custom_fields: buildReferralMilestoneCustomFields(event) }),
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
   });
+}
 
-  if (!fieldUpdate.response.ok) {
-    throw new Error(
+async function updateReferralMilestoneCustomFields(event) {
+  let lastError;
+
+  for (const delayMs of [0, 750, 2000]) {
+    if (delayMs > 0) {
+      await sleep(delayMs);
+    }
+
+    const fieldUpdate = await beehiivFetch(`/subscriptions/by_email/${encodeURIComponent(event.inviter_email)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ custom_fields: buildReferralMilestoneCustomFields(event) }),
+    });
+
+    if (fieldUpdate.response.ok) {
+      return fieldUpdate.payload;
+    }
+
+    lastError = new Error(
       getBeehiivErrorMessage(fieldUpdate.payload) ||
         `beehiiv subscription field update failed (${fieldUpdate.response.status})`
     );
   }
 
-  return fieldUpdate.payload;
+  throw lastError || new Error('beehiiv subscription field update failed');
 }
 
 async function notifyReferralMilestones(events) {
