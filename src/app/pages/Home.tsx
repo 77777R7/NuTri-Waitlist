@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { CheckCircle2, CircleAlert, Copy, Gift, Users } from 'lucide-react';
+import { ArrowRight, CheckCircle2, CircleAlert, Copy, Gift, Users } from 'lucide-react';
 import { Link } from 'react-router';
 import '../../styles/logoloop.css';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
@@ -33,6 +33,14 @@ function cleanReferralCode(value: string | null) {
   const trimmed = value?.trim().toLowerCase();
   if (!trimmed || !/^[a-z0-9_-]{6,64}$/.test(trimmed)) return '';
   return trimmed.slice(0, 64);
+}
+
+function getEmailValidationMessage(email: string) {
+  if (!email) return 'Please enter your email address.';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return 'Please enter a valid email address, like name@example.com.';
+  }
+  return '';
 }
 
 function readIncomingReferralCode() {
@@ -101,6 +109,7 @@ function readWaitlistAttribution(): WaitlistAttribution {
 
 export default function Home() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const emailInputRef = useRef<HTMLInputElement>(null);
   const [email, setEmail] = useState('');
   const [waitlistStatus, setWaitlistStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [waitlistMessage, setWaitlistMessage] = useState('');
@@ -125,10 +134,12 @@ export default function Home() {
     const formData = new FormData(event.currentTarget);
     const submittedEmail = String(formData.get('email') || '').trim();
     const company = String(formData.get('company') || '').trim();
+    const validationMessage = getEmailValidationMessage(submittedEmail);
 
-    if (!submittedEmail) {
+    if (validationMessage) {
       setWaitlistStatus('error');
-      setWaitlistMessage('Please enter your email address.');
+      setWaitlistMessage(validationMessage);
+      emailInputRef.current?.focus();
       return;
     }
 
@@ -191,6 +202,24 @@ export default function Home() {
               NuTri is building a smarter supplement experience. Join the waitlist to get launch updates and a 3-day starting trial.
             </p>
             <div className="animate-fade-up delay-300 flex flex-col items-start gap-4">
+              <div className="flex w-full max-w-[500px] flex-col gap-3 sm:flex-row sm:items-center">
+                <a
+                  href="#waitlist"
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-slate-950 px-6 font-inter text-sm font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_14px_30px_rgba(15,23,42,0.16)] transition-transform duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  Join the waitlist
+                  <ArrowRight className="h-4 w-4" />
+                </a>
+                <Link
+                  to="/learn-more"
+                  className="inline-flex h-12 items-center justify-center rounded-full border border-white/70 bg-[rgba(248,253,255,0.58)] px-6 font-inter text-sm font-bold text-slate-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_10px_26px_rgba(15,54,86,0.08)] backdrop-blur-[28px] transition-colors duration-300 hover:bg-white/82"
+                >
+                  See how NuTri works
+                </Link>
+              </div>
+              <p className="font-inter text-xs font-bold uppercase tracking-[0.12em] text-slate-900/42 sm:text-sm">
+                3-day starting trial &middot; invite friends for up to 4 extra days
+              </p>
             </div>
           </div>
           <div 
@@ -242,7 +271,7 @@ export default function Home() {
               </div>
             </div>
           )}
-          <form className="w-full max-w-[500px] flex flex-col md:flex-row gap-3 md:gap-2 mb-4" onSubmit={handleWaitlistSubmit}>
+          <form className="w-full max-w-[500px] flex flex-col md:flex-row gap-3 md:gap-2 mb-4" onSubmit={handleWaitlistSubmit} noValidate>
             <input
               type="text"
               name="company"
@@ -252,11 +281,21 @@ export default function Home() {
               aria-hidden="true"
             />
             <div className="relative flex-1 w-full">
+              <label htmlFor="waitlist-email" className="sr-only">Email address</label>
               <input 
+                ref={emailInputRef}
+                id="waitlist-email"
                 type="email" 
                 name="email"
                 placeholder="Enter your email address" 
                 required
+                inputMode="email"
+                autoComplete="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                aria-invalid={waitlistStatus === 'error' ? 'true' : 'false'}
+                aria-describedby={waitlistMessage ? 'waitlist-feedback' : undefined}
                 value={email}
                 disabled={waitlistStatus === 'submitting'}
                 onChange={(event) => {
@@ -279,6 +318,7 @@ export default function Home() {
           </form>
           {waitlistMessage && (
             <div
+              id="waitlist-feedback"
               className={`mb-5 flex w-full max-w-[500px] items-start gap-3 rounded-[22px] border px-4 py-3 text-left shadow-[inset_0_1px_1px_rgba(255,255,255,0.75),0_12px_30px_rgba(15,23,42,0.08)] backdrop-blur-[18px] ${
                 waitlistStatus === 'success'
                   ? 'border-emerald-500/30 bg-emerald-50/75 text-emerald-950'
@@ -300,7 +340,7 @@ export default function Home() {
                   {waitlistStatus === 'success' ? 'You are on the waitlist.' : 'Could not join yet.'}
                 </p>
                 <p className="mt-1 font-inter text-sm leading-[1.45] opacity-80">
-                  {waitlistStatus === 'success' ? 'We saved your spot and will use this email for NuTri launch updates.' : waitlistMessage}
+                  {waitlistStatus === 'success' ? 'We saved your spot. Copy your invite link below to unlock up to 4 extra trial days.' : waitlistMessage}
                 </p>
               </div>
             </div>
@@ -366,13 +406,13 @@ export default function Home() {
                 {[...Array(6)].map((_, innerIdx) => (
                   <React.Fragment key={innerIdx}>
                     <div className="logoloop__item">
-                      <ImageWithFallback key={`logo1-fix-${innerIdx}`} src={logo1} alt="Logo 1" className="h-6 md:h-7 object-contain mix-blend-multiply grayscale" />
+                      <ImageWithFallback key={`logo1-fix-${innerIdx}`} src={logo1} alt="Logo 1" loading="lazy" decoding="async" className="h-6 md:h-7 object-contain mix-blend-multiply grayscale" />
                     </div>
                     <div className="logoloop__item">
-                      <ImageWithFallback key={`logo2-fix-${innerIdx}`} src={logo2} alt="Logo 2" className="h-6 md:h-7 object-contain mix-blend-multiply grayscale" />
+                      <ImageWithFallback key={`logo2-fix-${innerIdx}`} src={logo2} alt="Logo 2" loading="lazy" decoding="async" className="h-6 md:h-7 object-contain mix-blend-multiply grayscale" />
                     </div>
                     <div className="logoloop__item">
-                      <ImageWithFallback key={`logo3-fix-${innerIdx}`} src={logo3} alt="Logo 3" className="h-6 md:h-7 object-contain mix-blend-multiply grayscale" />
+                      <ImageWithFallback key={`logo3-fix-${innerIdx}`} src={logo3} alt="Logo 3" loading="lazy" decoding="async" className="h-6 md:h-7 object-contain mix-blend-multiply grayscale" />
                     </div>
                   </React.Fragment>
                 ))}

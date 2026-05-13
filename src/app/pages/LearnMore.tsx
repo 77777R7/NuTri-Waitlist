@@ -147,6 +147,8 @@ export default function LearnMore() {
                 <ImageWithFallback
                   src="/email/nutri-score.png"
                   alt="NuTri Score product quality screen"
+                  loading="lazy"
+                  decoding="async"
                   className="h-auto w-full rounded-[24px]"
                 />
               </div>
@@ -156,6 +158,8 @@ export default function LearnMore() {
                 <ImageWithFallback
                   src="/email/personalized-insights.png"
                   alt="NuTri Personalized Insights screen"
+                  loading="lazy"
+                  decoding="async"
                   className="h-auto w-full rounded-[22px]"
                 />
               </div>

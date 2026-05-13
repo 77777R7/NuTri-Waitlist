@@ -1,9 +1,6 @@
 import { createBrowserRouter } from "react-router";
 import RootLayout from "./RootLayout";
 import Home from "./pages/Home";
-import About from "./pages/About";
-import LearnMore from "./pages/LearnMore";
-import { Privacy, Terms } from "./pages/Legal";
 
 export const router = createBrowserRouter([
   {
@@ -11,10 +8,34 @@ export const router = createBrowserRouter([
     Component: RootLayout,
     children: [
       { index: true, Component: Home },
-      { path: "about", Component: About },
-      { path: "learn-more", Component: LearnMore },
-      { path: "terms", Component: Terms },
-      { path: "privacy", Component: Privacy },
+      {
+        path: "about",
+        lazy: async () => {
+          const { default: Component } = await import("./pages/About");
+          return { Component };
+        },
+      },
+      {
+        path: "learn-more",
+        lazy: async () => {
+          const { default: Component } = await import("./pages/LearnMore");
+          return { Component };
+        },
+      },
+      {
+        path: "terms",
+        lazy: async () => {
+          const { Terms: Component } = await import("./pages/Legal");
+          return { Component };
+        },
+      },
+      {
+        path: "privacy",
+        lazy: async () => {
+          const { Privacy: Component } = await import("./pages/Legal");
+          return { Component };
+        },
+      },
     ],
   },
 ]);
