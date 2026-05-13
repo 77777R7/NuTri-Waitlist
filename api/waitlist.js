@@ -187,6 +187,37 @@ async function callSupabaseRpc(functionName, payload) {
   return responsePayload;
 }
 
+async function callSupabaseRest(path, params = {}) {
+  const config = getSupabaseConfig();
+
+  if (!config) {
+    throw new Error('Supabase waitlist ledger is missing NUTRI_SUPABASE_URL or service role key');
+  }
+
+  const url = new URL(`${config.url}/rest/v1/${path}`);
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      url.searchParams.set(key, value);
+    }
+  });
+
+  const response = await fetch(url, {
+    headers: {
+      apikey: config.serviceRoleKey,
+      Authorization: `Bearer ${config.serviceRoleKey}`,
+      'Content-Type': 'application/json',
+    },
+  });
+  const responsePayload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const message = getBeehiivErrorMessage(responsePayload) || response.statusText;
+    throw new Error(`Supabase REST ${path} failed (${response.status}): ${message}`);
+  }
+
+  return responsePayload;
+}
+
 async function registerWaitlistSignup({
   email,
   referralCode,
@@ -229,6 +260,30 @@ async function claimPendingReferralMilestones(limit = 10) {
   });
 
   return Array.isArray(data) ? data : [];
+}
+
+async function findPendingReferralMilestonesByCode(referralCode) {
+  const cleanCode = cleanReferralCode(referralCode);
+  if (!cleanCode) return [];
+
+  const inviterRows = await callSupabaseRest('waitlist_signups', {
+    referral_code: `eq.${cleanCode}`,
+    select: 'email',
+    limit: '1',
+  });
+  const inviterEmail = inviterRows?.[0]?.email;
+  if (!inviterEmail) return [];
+
+  const events = await callSupabaseRest('waitlist_referral_milestone_events', {
+    inviter_email: `eq.${inviterEmail}`,
+    event_status: 'eq.pending',
+    select:
+      'event_id:id,inviter_email,milestone_friends,referred_count,bonus_days,total_trial_days',
+    order: 'created_at.desc',
+    limit: '3',
+  });
+
+  return Array.isArray(events) ? events : [];
 }
 
 async function beehiivFetch(path, options = {}) {
@@ -583,7 +638,17 @@ async function handleRequest(request) {
     console.error('Supabase waitlist beehiiv sync status update failed', error);
   }
 
-  const createdMilestoneEvents = getMilestoneEvents(initialLedgerRow);
+  let createdMilestoneEvents = getMilestoneEvents(initialLedgerRow);
+  if (!createdMilestoneEvents.length && referredByCode) {
+    try {
+      createdMilestoneEvents = await findPendingReferralMilestonesByCode(referredByCode);
+    } catch (error) {
+      console.error('failed to load pending referral milestone events by code', {
+        referredByCode,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
   const milestoneNotification = await notifyReferralMilestones(createdMilestoneEvents);
 
   if (milestoneNotification.configured) {
