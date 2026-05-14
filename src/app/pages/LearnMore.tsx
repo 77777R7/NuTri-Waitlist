@@ -30,10 +30,42 @@ const scanOutputs = [
 ];
 
 const qualitySignals = [
-  ['Ingredient Safety', 'High'],
-  ['Formula Transparency', 'High'],
-  ['Label Clarity', 'High'],
-  ['Testing & Verification', 'Limited'],
+  {
+    label: 'Ingredient Safety',
+    status: 'High',
+    width: '92%',
+    description: 'Checks whether important safety-related information is clearly provided.',
+  },
+  {
+    label: 'Formula Transparency',
+    status: 'High',
+    width: '86%',
+    description: 'Reviews what is in the product, ingredient amounts, and stated forms.',
+  },
+  {
+    label: 'Label Clarity',
+    status: 'High',
+    width: '80%',
+    description: 'Looks at whether label information is clear, complete, and easy to understand.',
+  },
+  {
+    label: 'Manufacturing Standards',
+    status: 'Limited',
+    width: '62%',
+    description: 'Looks for cGMP, production standards, location, facility, or quality-control details.',
+  },
+  {
+    label: 'Testing and Verification',
+    status: 'Limited',
+    width: '58%',
+    description: 'Checks for third-party testing, COAs, certifications, batch testing, or verifiable sources.',
+  },
+  {
+    label: 'Product Quality Signals',
+    status: 'High',
+    width: '78%',
+    description: 'Reviews extra signals like non-GMO, gluten-free, vegan, allergen-free, serving size, and servings.',
+  },
 ];
 
 export default function LearnMore() {
@@ -233,7 +265,7 @@ export default function LearnMore() {
               <div className="gsap-panel-item rounded-[30px] border border-white/65 bg-[rgba(255,255,255,0.44)] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_18px_50px_rgba(15,54,86,0.1)] backdrop-blur-[30px] xl:p-6">
                 <div className="mb-6 flex items-start justify-between gap-6">
                   <div>
-                    <p className="font-inter text-xs font-bold uppercase tracking-[0.2em] text-slate-900/42">Product quality</p>
+                    <p className="font-inter text-xs font-bold uppercase tracking-[0.2em] text-slate-900/42">NuTri Score</p>
                     <h2 className="mt-2 font-['DM_Serif_Display'] text-5xl leading-none tracking-[-0.02em] text-slate-900">85<span className="font-inter text-2xl font-bold text-slate-900/42">/100</span></h2>
                     <p className="mt-2 font-inter text-sm font-bold text-emerald-600">Strong signal profile</p>
                   </div>
@@ -244,16 +276,21 @@ export default function LearnMore() {
                 </div>
 
                 <div className="space-y-3">
-                  {qualitySignals.map(([label, status], index) => (
-                    <div key={label} className="rounded-[20px] border border-white/65 bg-white/52 p-4">
-                      <div className="mb-3 flex items-center justify-between">
-                        <span className="font-inter text-sm font-bold text-slate-900">{label}</span>
-                        <span className={`font-inter text-xs font-bold ${status === 'High' ? 'text-emerald-600' : 'text-amber-700'}`}>{status}</span>
+                  {qualitySignals.map((signal) => (
+                    <div
+                      key={signal.label}
+                      className="rounded-[18px] border border-white/65 bg-white/52 p-3.5"
+                      title={signal.description}
+                      aria-label={`${signal.label}: ${signal.description}`}
+                    >
+                      <div className="mb-2.5 flex items-center justify-between gap-4">
+                        <span className="font-inter text-[13px] font-bold leading-tight text-slate-900">{signal.label}</span>
+                        <span className={`shrink-0 font-inter text-xs font-bold ${signal.status === 'High' ? 'text-emerald-600' : 'text-amber-700'}`}>{signal.status}</span>
                       </div>
                       <div className="h-2 overflow-hidden rounded-full bg-slate-900/8">
                         <div
-                          className={`h-full rounded-full ${status === 'High' ? 'bg-emerald-500' : 'bg-amber-500'}`}
-                          style={{ width: status === 'High' ? `${90 - index * 6}%` : '58%' }}
+                          className={`h-full rounded-full ${signal.status === 'High' ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                          style={{ width: signal.width }}
                         />
                       </div>
                     </div>
