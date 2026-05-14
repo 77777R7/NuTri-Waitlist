@@ -12,7 +12,7 @@ type LegalPageProps = {
   sections: LegalSection[];
 };
 
-const lastUpdated = 'May 12, 2026';
+const lastUpdated = 'May 14, 2026';
 
 const pageShellClass =
   "w-full max-w-4xl mx-auto rounded-[28px] backdrop-blur-[30px] backdrop-saturate-150 bg-[rgba(255,255,255,0.24)] border border-[rgba(255,255,255,0.58)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.7),0_20px_60px_rgba(0,0,0,0.05)]";
@@ -33,10 +33,12 @@ const termsSections: LegalSection[] = [
     ],
   },
   {
-    title: '3. Waitlist access',
+    title: '3. Waitlist access and referral trial bonus',
     body: [
-      'Joining the waitlist does not guarantee access to NuTri, beta features, founding member pricing, or any specific launch timeline. We may change, delay, limit, or discontinue waitlist access at any time as the product develops.',
+      'Joining the waitlist does not guarantee access to NuTri, beta features, paid features, or any specific launch timeline. We may change, delay, limit, or discontinue waitlist access at any time as the product develops.',
       'You are responsible for providing an accurate email address if you want to receive updates from us.',
+      'NuTri may offer a waitlist referral promotion where confirmed friends who join from your invite link can increase your starting trial period. The current launch promotion starts at 3 trial days, with 1 confirmed friend increasing it to 4 total days, 2 confirmed friends increasing it to 5 total days, and 3 or more confirmed friends increasing it to 7 total days. Trial bonus rules, availability, and eligibility may change before or after launch.',
+      'Referral bonuses have no cash value, are not transferable, and may require you to use the same email address for the waitlist and the NuTri app. Self-referrals, duplicate signups, automated signups, fake emails, or other abuse may be ignored or removed.',
     ],
   },
   {
@@ -48,7 +50,7 @@ const termsSections: LegalSection[] = [
   {
     title: '5. No unlawful or harmful use',
     body: [
-      'You may not use this website in a way that interferes with the website, attempts to access non-public systems, submits false or automated signups, or violates applicable laws.',
+      'You may not use this website in a way that interferes with the website, attempts to access non-public systems, submits false or automated signups, manipulates referral tracking, or violates applicable laws.',
     ],
   },
   {
@@ -94,14 +96,15 @@ const privacySections: LegalSection[] = [
   {
     title: '1. What we collect',
     body: [
-      'When you join the waitlist, we collect the email address you submit. We may also receive basic technical information such as your browser, device type, IP address, referring page, and the time of your visit or signup.',
+      'When you join the waitlist, we collect the email address you submit. We may also collect or generate waitlist-related information such as your referral code, invite link, whether you joined through someone else\'s referral link, referral counts, trial bonus status, signup status, and related timestamps.',
+      'We may receive basic technical and attribution information such as your browser, device type, IP address, referring page, UTM parameters, campaign source, and the time of your visit or signup. The website may use browser storage, such as session storage, to remember referral or attribution information during your visit.',
       'If you contact us directly, we may collect the information you choose to include in your message.',
     ],
   },
   {
     title: '2. How we use information',
     body: [
-      'We use your information to operate the waitlist, send NuTri launch updates, communicate about beta access or product news, prevent spam or abuse, understand website performance, and improve NuTri.',
+      'We use your information to operate the waitlist, send NuTri launch updates, communicate about beta access or product news, manage referral invite links and trial bonus eligibility, attribute signups to marketing channels, prevent spam or abuse, understand website performance, and improve NuTri.',
       'We do not use waitlist email addresses to make medical decisions, and we do not sell your personal information.',
     ],
   },
@@ -114,7 +117,7 @@ const privacySections: LegalSection[] = [
   {
     title: '4. Service providers',
     body: [
-      'We use service providers to operate the website and waitlist. These may include Vercel for hosting and beehiiv for email list management and newsletter-related services.',
+      'We use service providers to operate the website and waitlist. These may include Vercel for hosting, Supabase for waitlist and referral records, and beehiiv for email list management and newsletter-related services.',
       'These providers process information on our behalf or according to their own terms and privacy policies. We only share information needed for the services they provide.',
     ],
   },
